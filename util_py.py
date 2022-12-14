@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug 24 22:18:52 2022
-
 @author: Mani
 """
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug 24 22:12:39 2022
-
 @author: Mani
 """
 import numpy as np
@@ -21,7 +19,6 @@ def gausswin(N,alpha):
 def get_gausswin(sigma,bin_width):
     # sigma = bin_width * N / (2*alpha)
     # Look at help of gausswin to see how the above was derived
-
     nStd = 6
     N = np.round(nStd*sigma/bin_width)
     alpha = bin_width*N*1/(2*sigma)
@@ -33,6 +30,7 @@ def std_robust(x):
     # Robust standard deviation
     s = np.median(np.abs((x-np.median(x)))/0.6745)
     return s
+
 def find_repeats(x,b,splice_gap=0):
     """    
     find_repeats(x, b, splice_gap)
