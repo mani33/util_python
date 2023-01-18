@@ -39,7 +39,7 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=1000,**kwargs):
     # Logic of the test:
     # Each row in r is a single trial time series or a time series that was
     # averaged across trials for a single subject. Each column of r is a 
-    # response value at a given time bin. The time vector (bin_cen_t) will 
+    # response value at a given time bin. The time vector is bin_cen_t.
     
     # We will do a statistical test on each time bin. That is, including the
     # baseline time bins. This is possible because, for each time series, we
