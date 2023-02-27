@@ -17,7 +17,7 @@ import util_py as upy
 from copy import deepcopy
 import time
 
-def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=1000,**kwargs):
+def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     """ 
     Perform cluster mass test to find contiguous time points that are
     significantly modulated by stimulus.
@@ -106,7 +106,7 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=1000,**kwargs):
             # print(clus_start_ind[iClus])
             time_ind = list(range(clus_start_ind[iClus],clus_end_ind[iClus]+1))
             sig_time_ind.append(time_ind)
-    return np.array(sig_time_ind).astype(int)
+    return np.ravel(np.array(sig_time_ind).astype(int))
 
 def shuffle_time_series(r):
     # We will swap the baseline and post-stim segments of each trial
@@ -144,10 +144,10 @@ def get_stats_for_timeseries(bin_cen_t,r,stat_test):
     n, m = r.shape
     alpha = 0.05 # alpha - Type-1 error threshold  
     # Step 1: Find mean of baseline for each time series
-    baseline_means = []
+    baseline_means = np.ravel(np.zeros((1,n),dtype=float))
 
     for i in range(n):
-        baseline_means.append(np.mean(r[i,bin_cen_t<0]))
+        baseline_means[i] = np.mean(r[i,bin_cen_t<0])
     # Step 2: Perform statistical test at each time point. If significant, find
     # out if positively or negatively modulated
     statistic = np.ravel(np.zeros((1,m),dtype=float))# 1d numpy array of floats
@@ -172,6 +172,7 @@ def get_stats_for_timeseries(bin_cen_t,r,stat_test):
             for iTime in range(m):               
                 _,pvalue = sps.wilcoxon(r[:,iTime]-baseline_means,
                                         alternative='two-sided')
+                print(iTime)
                 if pvalue < alpha:
                     
                    # signed rank values will be different depending on which
@@ -190,8 +191,9 @@ def get_stats_for_timeseries(bin_cen_t,r,stat_test):
                        assert pvalue < (alpha/2),'error in pvalue calculations'
                        neg_ind[iTime] = True
                        statistic[iTime] = rk
+        
         case _:
-            raise ValueError("stat_test must be 't' or 'ranksum'")
+            raise ValueError("stat_test must be 't' or 'signed_rank'")
     return np.array(statistic),pos_ind,neg_ind
 
 def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
@@ -225,24 +227,6 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
     """
     # Step-1: Get the test statistic value for each time point
     stats,pos_ind,neg_ind = get_stats_for_timeseries(bin_cen_t,r,stat_test) # output: 1d np array
-    # Step-2: Find clusters that exceed threshold
-    # alpha = 0.05/2 # alpha - Type-1 error threshold, two-sided   
-    # match stat_test:
-    #     case 't': # t-test
-    #         df = r.shape[0]-1 # degrees of freedom
-    #         cval_pos = sps.t.ppf(1-alpha,df)# critical value upper
-    #         cval_neg = sps.t.ppf(alpha,df)# critical value lower
-    #     case 'signed_rank':
-    #         # Todo: find critical values
-    #         cval_pos = []
-    #         cval_neg = []
-    #         raise Exception("ranksum test is not implemented yet")
-    #     case _:
-    #         raise ValueError('Only "t" or "ranksum" is allowed')
-    # # Because we will do a two-sided test, we will cluster positive and negative
-    # # modulations separately
-    # pos_ind = stats > cval_pos
-    # neg_ind = stats < cval_neg
     
     pos_starts,pos_ends = upy.find_repeats(pos_ind.astype(float), 1)
     neg_starts,neg_ends = upy.find_repeats(neg_ind.astype(float), 1)
