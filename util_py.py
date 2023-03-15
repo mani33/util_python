@@ -94,6 +94,20 @@ def find_repeats(x,b,splice_gap=0):
         end_ind = np.array([]).astype(int)
     return start_ind,end_ind
 
+def deviance_logistic(y_true,y_pred):
+    """ Compute deviance per sample, for logistic regression
+    parameters:
+        y_true - 1d numpy array of 1's and 0's, the true class labels
+        y_pred - 1d numpy array of predicted class probabilities ((0,1])
+    returns:
+        d - deviance value per sample  """
+    assert y_true.size==y_pred.size, 'y and yhat must be the same length'
+    loss_a = np.dot(y_true,np.log(y_pred))
+    loss_b = np.dot((1-y_true),np.log(1-y_pred))
+    d = -2*(np.sum(loss_a + loss_b))/y_true.size
+    return d
+    
+    
 
 
         
