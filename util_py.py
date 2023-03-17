@@ -106,8 +106,67 @@ def deviance_logistic(y_true,y_pred):
     loss_b = np.dot((1-y_true),np.log(1-y_pred))
     d = -2*(np.sum(loss_a + loss_b))/y_true.size
     return d
-    
-    
+
+def mprint(*args,verbose=True):
+    if verbose:
+        for v in args:
+            print(v,end=" ",flush=True)
+def intersect(A,B):
+    """ Return intersection of A and B and indices of A matching the common
+    elements """
+    As = set(A)
+    Bs = set(B)
+    ABi = list(As.intersection(Bs))
+    iA = []
+    iB = []
+    for intElem in ABi:
+        iA.append(np.nonzero([a==intElem for a in A])[0][0])   
+        iB.append(np.nonzero([b==intElem for b in B])[0][0])       
+    return ABi,iA,iB
+def false_positive_count(y_true,y_pred,positive_class=1):
+    pc = positive_class
+    fp = np.nonzero([(yt!=pc)and(yp==pc) for yt,yp in zip(y_true,y_pred)])[0].size
+    return fp
+def false_negative_count(y_true,y_pred,positive_class=1):
+    pc = positive_class
+    fn = np.nonzero([(yt==pc)and(yp!=pc) for yt,yp in zip(y_true,y_pred)])[0].size
+    return fn
+def true_positive_count(y_true,y_pred,positive_class=1):
+    pc = positive_class
+    tp = np.nonzero([(yt==pc)and(yp==pc) for yt,yp in zip(y_true,y_pred)])[0].size
+    return tp
+def true_negative_count(y_true,y_pred,positive_class=1):
+    pc = positive_class
+    tn = np.nonzero([(yt!=pc)and(yp!=pc) for yt,yp in zip(y_true,y_pred)])[0].size
+    return tn
+def sensitivity(y_true,y_pred,positive_class=1):
+    tp = true_positive_count(y_true, y_pred,positive_class=positive_class)
+    fn = false_negative_count(y_true, y_pred,positive_class=positive_class)
+    sn = tp/(tp+fn)
+    return sn
+def specificity(y_true,y_pred,positive_class=1):
+    tn = true_negative_count(y_true,y_pred,positive_class=positive_class)
+    fp = false_positive_count(y_true, y_pred,positive_class=positive_class)
+    sp = tn/(tn+fp)
+    return sp
+def positive_predictive_value(y_true,y_pred,positive_class=1):
+    tp = true_positive_count(y_true, y_pred,positive_class=positive_class)
+    fp = false_negative_count(y_true, y_pred,positive_class=positive_class)
+    ppv = tp/(tp+fp)
+    return ppv
+def adj_positive_predictive_value(y_true,y_pred,positive_class=1):
+    pc = positive_class
+    pr = np.nonzero([y==pc for y in y_true])[0].size/len(list(y_true))
+    sn = sensitivity(y_true, y_pred,positive_class=positive_class)
+    sp = specificity(y_true, y_pred,positive_class=positive_class)
+    appv = (sn*pr)/((sn*pr)+((1-sp)*(1-pr)))
+    return appv
+def accuracy(y_true,y_pred,positive_class=1):
+    tp = true_positive_count(y_true, y_pred,positive_class=positive_class)
+    tn = true_negative_count(y_true, y_pred,positive_class=positive_class)
+    acc = (tp+tn)/len(list(y_true))
+    return acc
+
 
 
         
