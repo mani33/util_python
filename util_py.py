@@ -170,8 +170,34 @@ def accuracy(y_true,y_pred,positive_class=1):
     acc = (tp+tn)/len(list(y_true))
     return acc
 
-
-
+def arange(start,stop,step,endpoint=True):
+    v = np.arange(start,stop,step)   
+    if endpoint and (v[-1]+step)==stop:
+        v = np.concatenate([v, [stop]])       
+    return v
+def create_psth_bins(pre,post,bin_width):
+    """
+    Create bin edges for peri-stimulus time histograms (psth). The bin edges will
+    be guranteed to have zero as one of the egde points.
+    
+    Inputs:
+        bin_width: in sec
+        pre: prestimulus time; a negative number in sec
+        post: poststimulus time; a positive number in sec
+    Output:
+        bin_edges: 1d-numpy array of bin edges in sec
+        bin_cen: 1d-numpy array of bin centers in sec
+    """
+    
+    """ Make sure that 0 is included in the bin edges """
+    # Keep 0 at starting point; otherwise np.arange may or may not include 0
+    # depending on value of pre.  
+    bins_pre = -np.flipud(arange(0,-pre,bin_width))
+    bins_post = arange(0,post,bin_width)
+    bins_post = bins_post[1:None] # To avoid including zero twice later when concatenating
+    bin_edges = np.concatenate((bins_pre,bins_post))
+    bin_cen = bin_edges[:-1]+bin_width/2
+    return bin_edges,bin_cen
         
 
 

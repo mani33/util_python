@@ -227,7 +227,7 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
     """
     
     # Input check: positive and negative time bins must be equal
-    n_neg = np.argwhere(bin_cen_t<=0).size
+    n_neg = np.argwhere(bin_cen_t<0).size
     n_pos = np.argwhere(bin_cen_t>0).size
     assert n_pos==n_neg,\
     'Number of positive time bins (%u) must be equal number of negative time bins (%u)'\
