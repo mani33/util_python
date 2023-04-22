@@ -159,7 +159,10 @@ def adj_positive_predictive_value(y_true,y_pred,positive_class=1):
     pr = np.nonzero([y==pc for y in y_true])[0].size/len(list(y_true))
     sn = sensitivity(y_true, y_pred,positive_class=positive_class)
     sp = specificity(y_true, y_pred,positive_class=positive_class)
-    appv = (sn*pr)/((sn*pr)+((1-sp)*(1-pr)))
+    dn = ((sn*pr)+((1-sp)*(1-pr)))
+    if dn==0:
+        print(sn,pr,sp)
+    appv = (sn*pr)/dn
     return appv
 def accuracy(y_true,y_pred,positive_class=1):
     tp = true_positive_count(y_true, y_pred,positive_class=positive_class)
