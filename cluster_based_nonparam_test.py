@@ -225,7 +225,16 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
       clus_start_ind - 1d numpy int array of bin_cen_t- start indices of clusters
       clus_end_ind - 1d numpy int array of bin_cen_t- end indices of clusters    
     """
+    
+    # Input check: positive and negative time bins must be equal
+    n_neg = np.argwhere(bin_cen_t<=0).size
+    n_pos = np.argwhere(bin_cen_t>0).size
+    assert n_pos==n_neg,\
+    'Number of positive time bins (%u) must be equal number of negative time bins (%u)'\
+        % (n_pos,n_neg)
+    
     # Step-1: Get the test statistic value for each time point
+    
     stats,pos_ind,neg_ind = get_stats_for_timeseries(bin_cen_t,r,stat_test) # output: 1d np array
     
     pos_starts,pos_ends = upy.find_repeats(pos_ind.astype(float), 1)
