@@ -170,20 +170,34 @@ def accuracy(y_true,y_pred,positive_class=1):
     acc = (tp+tn)/len(list(y_true))
     return acc
 
-def arange(start,stop,step,endpoint=True):
-    v = np.arange(start,stop,step)   
-    if endpoint and (v[-1]+step)==stop:
-        v = np.concatenate([v, [stop]])       
-    return v
-def create_psth_bins(pre,post,bin_width):
+def arange(start,stop,step,n_decimals):
+    # n_decimals - number of decimals after the decimal point to which we should
+    # round the values to check if they cross the stop value. Actual output
+    # array values will NOT be rounded    
+    assert start < stop, 'start value must be lower than stop value'
+    assert step > 0, 'step value must be positive'
+ 
+    enough = False
+    v = [start]
+    while not enough:
+        v.append(v[-1]+step)
+        if np.round(v[-1],n_decimals)>stop:
+            enough = True
+            v = v[0:-1] 
+    return np.array(v)
+                
+def create_psth_bins(pre,post,bin_width,n_decimals=5):
     """
     Create bin edges for peri-stimulus time histograms (psth). The bin edges will
     be guranteed to have zero as one of the egde points.
     
-    Inputs:
-        bin_width: in sec
+    Inputs:        
         pre: prestimulus time; a negative number in sec
         post: poststimulus time; a positive number in sec
+        bin_width: in sec
+        n_decimals - number of decimals after the decimal point to which we should
+                    round the values to check if they cross the stop value. Actual output
+                    array values will NOT be rounded
     Output:
         bin_edges: 1d-numpy array of bin edges in sec
         bin_cen: 1d-numpy array of bin centers in sec
@@ -191,9 +205,11 @@ def create_psth_bins(pre,post,bin_width):
     
     """ Make sure that 0 is included in the bin edges """
     # Keep 0 at starting point; otherwise np.arange may or may not include 0
-    # depending on value of pre.  
-    bins_pre = -np.flipud(arange(0,-pre,bin_width))
-    bins_post = arange(0,post,bin_width)
+    # depending on value of pre.
+    assert pre < 0, "pre time must be strictly negative"
+    assert post > 0, "post time must be strictly positive"
+    bins_pre = -np.flipud(arange(0,-pre,bin_width,n_decimals))
+    bins_post = arange(0,post,bin_width,n_decimals)
     bins_post = bins_post[1:None] # To avoid including zero twice later when concatenating
     bin_edges = np.concatenate((bins_pre,bins_post))
     bin_cen = bin_edges[:-1]+bin_width/2
