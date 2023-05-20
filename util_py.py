@@ -9,7 +9,7 @@ Created on Wed Aug 24 22:12:39 2022
 @author: Mani
 """
 import numpy as np
-# Module of common utility functions
+#%% Module of common utility functions
 def gausswin(N,alpha):
     L = N-1
     n = np.arange(0,N)-L/2
@@ -215,8 +215,24 @@ def create_psth_bins(pre,post,bin_width,n_decimals=5):
     bin_cen = bin_edges[:-1]+bin_width/2
     return bin_edges,bin_cen
         
-
-
-
-
-
+def make_axes(plt,w,h,dpi=300):
+    """ Create a new figure, and make a single subplot with axis size w x h in inches """
+    # Add space for x and y ticks and labels
+    # Note: axis width and height only includes the box of plotting area, 
+    # not ticks, tick labels, axis labels etc
+    pad_h_tot = 1 # inches of total padding on left and right side
+    pad_w_tot = 1 # inches of total padding on top and bottom
+    # Add padding to axis width
+    fw = w+pad_w_tot
+    fh = h+pad_h_tot
+    
+    p_left = pad_h_tot*0.65/fw
+    p_bottom = pad_w_tot*0.65/fh
+    
+    figsize = [fw,fh]
+    aw = w/fw
+    ah = h/fh
+    fig = plt.figure(figsize=figsize,dpi=dpi)
+    ax_pos = [p_left,p_bottom,aw,ah]
+    ax = fig.add_axes(ax_pos)
+    return fig,ax
