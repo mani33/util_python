@@ -151,17 +151,24 @@ def specificity(y_true,y_pred,positive_class=1):
     return sp
 def positive_predictive_value(y_true,y_pred,positive_class=1):
     tp = true_positive_count(y_true, y_pred,positive_class=positive_class)
-    fp = false_negative_count(y_true, y_pred,positive_class=positive_class)
+    fp = false_positive_count(y_true, y_pred,positive_class=positive_class)
+    if (tp+fp) == 0:
+        print(y_true)
+        print(y_pred)
     ppv = tp/(tp+fp)
     return ppv
-def adj_positive_predictive_value(y_true,y_pred,positive_class=1):
-    pc = positive_class
-    pr = np.nonzero([y==pc for y in y_true])[0].size/len(list(y_true))
+def adj_positive_predictive_value(y_true,y_pred,prevalence,positive_class=1):
+    """ Useful when you want to compute PPV for a hypothetical prevalence rate 
+        prevalence - probability of a condition (or disease) in the population
+    """    
+    pr = prevalence
     sn = sensitivity(y_true, y_pred,positive_class=positive_class)
     sp = specificity(y_true, y_pred,positive_class=positive_class)
     dn = ((sn*pr)+((1-sp)*(1-pr)))
     if dn==0:
+        print('_______________')
         print(sn,pr,sp)
+        print('_______________')
     appv = (sn*pr)/dn
     return appv
 def accuracy(y_true,y_pred,positive_class=1):
