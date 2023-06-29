@@ -112,7 +112,7 @@ def mprint(*args,verbose=True):
         for v in args:
             print(v,end=" ",flush=True)
 def intersect(A,B):
-    """ Return intersection of A and B and indices of A matching the common
+    """ Return intersection of A and B and indices of A and B matching the common
     elements """
     As = set(A)
     Bs = set(B)
@@ -120,9 +120,9 @@ def intersect(A,B):
     iA = []
     iB = []
     for intElem in ABi:
-        iA.append(np.nonzero([a==intElem for a in A])[0][0])   
-        iB.append(np.nonzero([b==intElem for b in B])[0][0])       
-    return ABi,iA,iB
+        iA.append(np.nonzero([a==intElem for a in A])[0])   
+        iB.append(np.nonzero([b==intElem for b in B])[0])      
+    return ABi,np.hstack(iA),np.hstack(iB)
 def false_positive_count(y_true,y_pred,positive_class=1):
     pc = positive_class
     fp = np.nonzero([(yt!=pc)and(yp==pc) for yt,yp in zip(y_true,y_pred)])[0].size
