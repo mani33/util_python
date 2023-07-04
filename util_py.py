@@ -94,17 +94,21 @@ def find_repeats(x,b,splice_gap=0):
         end_ind = np.array([]).astype(int)
     return start_ind,end_ind
 
-def deviance_logistic(y_true,y_pred):
+def deviance_logistic(y_true,y_pred,class_weights):
     """ Compute deviance per sample, for logistic regression
     parameters:
         y_true - 1d numpy array of 1's and 0's, the true class labels
         y_pred - 1d numpy array of predicted class probabilities ((0,1])
+        class_weights - dictionary of class weights. eg. {0:1.5,1:1} to set 
+                        1.5:1 weight ratio for classes 0:1
+                                                                  
     returns:
         d - deviance value per sample  """
     assert y_true.size==y_pred.size, 'y and yhat must be the same length'
-    loss_a = np.dot(y_true,np.log(y_pred))
-    loss_b = np.dot((1-y_true),np.log(1-y_pred))
-    d = -2*(np.sum(loss_a + loss_b))/y_true.size
+    assert np.unique(y_true).size==2, 'deviance is not implemented for multiclass'
+    loss_1 = np.dot(y_true,np.log(y_pred)*class_weights[1])
+    loss_0 = np.dot((1-y_true),np.log(1-y_pred)*class_weights[0])
+    d = -2*(np.sum(loss_1 + loss_0))/y_true.size
     return d
 
 def mprint(*args,verbose=True):
