@@ -9,6 +9,8 @@ Created on Wed Aug 24 22:12:39 2022
 @author: Mani
 """
 import numpy as np
+from itertools import combinations
+import copy
 #%% Module of common utility functions
 def gausswin(N,alpha):
     L = N-1
@@ -247,3 +249,27 @@ def make_axes(plt,w,h,dpi=300):
     ax_pos = [p_left,p_bottom,aw,ah]
     ax = fig.add_axes(ax_pos)
     return fig,ax
+def get_all_combinations(items):
+    """ Get all possible combinations of the given items 
+    Input: items - list of items
+    Output: cc - list of all possible combinations of the elements of the items
+    example: get_all_combinations(['a','b']) will output
+    [['a'],['b'],['c'],['a','b'],['a','c'],['b','c'],['a','b','c']]
+    """
+    assert type(items)==list,'input "items" must be a list'
+    k_values = np.arange(len(items))+1 # k in "n choose k"
+    cc = []
+    for k in k_values:
+        cb = list(combinations(items,k))
+        for c in cb:
+            cc.append(list(c))
+    return cc
+        
+def remove_list_elements(input_list,items_to_remove):
+    output_list = [x for x in input_list if x not in set(items_to_remove)]
+    return output_list
+    
+    
+    
+    
+    
