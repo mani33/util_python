@@ -18,7 +18,7 @@ def gausswin(N,alpha):
 
 def get_gausswin(sigma,bin_width):
     # sigma = bin_width * N / (2*alpha)
-    # Look at help of gausswin to see how the above was derived
+    # Look at help of gausswin of MATLAB to see how the above was derived
     nStd = 6
     N = np.round(nStd*sigma/bin_width)
     alpha = bin_width*N*1/(2*sigma)
@@ -215,7 +215,7 @@ def create_psth_bins(pre,post,bin_width,n_decimals=5):
     bin_cen = bin_edges[:-1]+bin_width/2
     return bin_edges,bin_cen
         
-def make_axes(plt,w,h,dpi=300):
+def make_axes(plt,wh,dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
     # Add space for x and y ticks and labels
     # Note: axis width and height only includes the box of plotting area, 
@@ -223,6 +223,8 @@ def make_axes(plt,w,h,dpi=300):
     pad_h_tot = 1 # inches of total padding on left and right side
     pad_w_tot = 1 # inches of total padding on top and bottom
     # Add padding to axis width
+    w = wh[0]
+    h = wh[1]
     fw = w+pad_w_tot
     fh = h+pad_h_tot
     
