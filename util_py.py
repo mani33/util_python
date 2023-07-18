@@ -269,6 +269,26 @@ def remove_list_elements(input_list,items_to_remove):
     output_list = [x for x in input_list if x not in set(items_to_remove)]
     return output_list
     
+def accuracy_multiclass(y_true,py_pred):
+    """ Calculate accuracy for multiclass by assigning each row of py_pred to a
+    class that had the maximum probability value
+     Inputs:
+         y_true - list of true class labels
+         yp_pred - nSamples-by-nClasses numpy array of class probabilities
+    Output:
+        accuracy """
+    n_samples = np.array(y_true).size
+    pred_class_index = np.argmax(py_pred,axis=1)
+    # Convert the class indices to actual classes
+    unique_class_labels = np.sort(np.unique(y_true))
+    pred_classes = [unique_class_labels[x] for x in pred_class_index]
+    # Compute accuracy
+    correct_count = np.nonzero([x==y for x,y in zip(y_true,pred_classes)])[0].size
+    accuracy = correct_count/n_samples
+    
+    return accuracy
+    
+    
     
     
     
