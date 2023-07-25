@@ -282,12 +282,14 @@ def accuracy_multiclass(cms):
     # Correctly identified entries are TP of all classes (every class is a "positive"
     # class in multiclass classification)
     sv = []
+    acc_each_class_ovr = {} # one-versus-rest accuracy for each class
     nPerClass = [] # number of samples in each class
-    for _,cc in cms.items():
+    for key,cc in cms.items():
         sv.append(cc['TP'])
         nPerClass.append(cc['support'])
+        acc_each_class_ovr[key] = (cc['TP']+cc['TN'])/(cc['TP']+cc['TN']+cc['TP']+cc['FP'])
     accuracy = np.sum(sv)/np.sum(nPerClass)
-    return accuracy
+    return accuracy, acc_each_class_ovr
     
 def get_confusion_matrix(y_true,y_pred,unique_class_labels):
     """ Confusion matrix - following sklearn/Wikipedia convention, the top label of the 
@@ -337,16 +339,19 @@ def sensitivity_multiclass(cms,average='macro'):
         average - 'micro' or 'macro'
     Outputs:
         sen - average sensitivity
-        sv - list of length nClasses; sensitivity of individual classes
+        sv - dict of length nClasses; sensitivity of individual classes
     
     """
-    sen_each_class = []
+    sen_each_class = {}
+    sv = []
     match average:
         case 'macro':
             # Get sensitivity of each class and then average across classes           
-            for _,cc in cms.items():
-                sen_each_class.append((cc['TP']/(cc['TP']+cc['FN'])))
-            sen = np.mean(sen_each_class)
+            for key,cc in cms.items():
+                v = (cc['TP']/(cc['TP']+cc['FN']))
+                sv.append(v)
+                sen_each_class[key] = v
+            sen = np.mean(sv)
         case 'micro':
             # Sum up all TP and FN across classes before computing sensitivity
             TP = []
@@ -371,20 +376,23 @@ def specificity_multiclass(cms,average='macro'):
         average - 'micro' or 'macro'
     Outputs:
         spe - average specificity
-        sv - list of length nClasses; specificity of individual classes
+        sv - dict length nClasses; specificity of individual classes
     """
-    spe_each_class = []
+    spe_each_class = {}
+    sv = []
     match average:
         case 'macro':
             # Get specificity of each class and then average across classes            
-            for _,cc in cms.items():               
-                spe_each_class.append(cc['TN']/(cc['TN']+cc['FP']))
-            spe = np.nanmean(spe_each_class)
+            for key,cc in cms.items():               
+                v = cc['TN']/(cc['TN']+cc['FP'])
+                sv.append(v)
+                spe_each_class[key]=v
+            spe = np.nanmean(sv)
         case 'micro':
             # Sum up all TN and FP across classes before computing specificity
             TN = []
             FP = []
-            for _,cc in cms.items():
+            for cc in cms.values():
                TN.append(cc['TN'])
                FP.append(cc['FP'])
             tn_tot = np.sum(TN)
@@ -403,17 +411,19 @@ def ppv_multiclass(cms,average='macro'):
         average - 'micro' or 'macro'
     Outputs:
         spe - average ppv
-        sv - list of length nClasses; ppv of individual classes
+        sv - dict of length nClasses; ppv of individual classes
     """     
-    ppv_each_class = []
+    ppv_each_class = {}
+    pv = []
     match average:
         case 'macro':
             # Get f1score of each class and then average across classes
-            for _,cc in cms.items():
+            for key,cc in cms.items():
                 # Positive predictive value
                 v = cc['TP']/(cc['TP']+cc['FP'])
-                ppv_each_class.append(v)
-            ppv = np.nanmean(ppv_each_class)
+                pv.append(v)
+                ppv_each_class[key] = v
+            ppv = np.nanmean(pv)
         case 'micro':
             # Sum up all TP and FN across classes before computing sensitivity
             TP = np.sum([x['TP'] for _,x in cms.items()])          
@@ -434,15 +444,17 @@ def npv_multiclass(cms,average='macro'):
         npv - average npv
         sv - list of length nClasses; npv of individual classes
     """
-    npv_each_class = []
+    npv_each_class = {}
+    nv = []
     match average:
         case 'macro':
             # Get f1score of each class and then average across classes
-            for _,cc in cms.items():
+            for key,cc in cms.items():
                 # Positive predictive value
                 v = cc['TN']/(cc['TN']+cc['FN'])
-                npv_each_class.append(v)
-            npv = np.nanmean(npv_each_class)
+                npv_each_class[key] = v
+                nv.append(v)
+            npv = np.nanmean(nv)
         case 'micro':
             # Sum up all TP and FN across classes before computing sensitivity
             TN = np.sum([x['TN'] for _,x in cms.items()])          
@@ -464,21 +476,23 @@ def f1score_multiclass(cms,average='macro'):
         f1_each_class - list of length nClasses; f1score of individual classes    
     
     """  
-    f1_each_class = []
+    f1_each_class = {}
+    fv = []
     match average:
         case 'macro':
             # Get f1score of each class and then average across classes            
-            for _,cc in cms.items():
+            for key,cc in cms.items():
                 # Sensitivity
                 sen = cc['TP']/(cc['TP']+cc['FN'])
                 # Precision or positive predictive value
                 ppv = cc['TP']/(cc['TP']+cc['FP'])               
                 f = 2/((1/sen)+(1/ppv))
-                print('sen,ppv,f value: %0.1f,%0.1f,%0.1f'%(sen,ppv,f))
+                # print('sen,ppv,f value: %0.1f,%0.1f,%0.1f'%(sen,ppv,f))
                 # if f==np.nan:
                 #     raise ValueError('f1 score was nan')
-                f1_each_class.append(f)
-            f1score = np.nanmean(f1_each_class)
+                f1_each_class[key] = f
+                fv.append(f)
+            f1score = np.nanmean(fv)
         case 'micro':
             # Sum up all TP and FN across classes before computing sensitivity
             TP = np.sum([x['TP'] for _,x in cms.items()])
@@ -501,45 +515,98 @@ def auc_multiclass(y_true,yp_pred,unique_class_labels):
             unique_class_labels - list of class labels with order matching yp_pred columns
        Outputs:
            auc_mean - averag AUC
+           auc_each_class - dict; keyed by class label; each class AUC
            fpr_grid - false positive rate coordinates for the average ROC curve
            mean_tpr - averaged true positive rate for the average ROC curve           
            data - dict (lenth=nClasses) of sub-dicts; each sub-dict contains
-           'fpr','tpr','th' and 'auc' for one-vs-rest based roc data
+           'fpr','tpr' and 'th' for one-vs-rest based roc data
         """
         
     # Compute AUC for each class versus rest
     # Set the labels of current class as 1 and the rest as 0
-    data = {}
+    roc_curve_data = {}
+    auc_each_class = {}
     nClasses = len(unique_class_labels)
-    for iClass,yp in enumerate(yp_pred.T):        
+    for iClass,yp in enumerate(yp_pred.T):
         c = unique_class_labels[iClass]
-        data[c] = {}
+        roc_curve_data[c] = {}
         yt = np.ones_like(y_true)
         yt[y_true!= c] = 0       
-        data[c]['fpr'],data[c]['tpr'],data[c]['th'] = skm.roc_curve(yt, yp)
-        data[c]['auc'] = skm.auc(data[c]['fpr'],data[c]['tpr'])
+        roc_curve_data[c]['fpr'],roc_curve_data[c]['tpr'],roc_curve_data[c]['th'] = skm.roc_curve(yt, yp)
+        auc = skm.auc(roc_curve_data[c]['fpr'],roc_curve_data[c]['tpr'])
+        auc_each_class[c] = auc
     # Average AUC across the classes
-    auc_mean = np.mean([data[c]['auc'] for c in unique_class_labels])
+    auc_mean = np.mean([v for v in auc_each_class.values()])
     # Average tp and fp after interpolating onto a common fpr
     fpr_grid = np.linspace(0.0,1.0,1000)
     mean_tpr = np.zeros_like(fpr_grid)
     for c in unique_class_labels:
-        mean_tpr += np.interp(fpr_grid,data[c]['fpr'],data[c]['tpr'])
+        mean_tpr += np.interp(fpr_grid,roc_curve_data[c]['fpr'],roc_curve_data[c]['tpr'])
     mean_tpr/=nClasses
     
-    return auc_mean,fpr_grid,mean_tpr,data
+    return auc_mean, auc_each_class, fpr_grid, mean_tpr, roc_curve_data
 
 def deviance_multiclass(y_true,y_pred_prob):
     """ Deviance per sample"""
     nClass = y_pred_prob.shape[1]
-    uClass = np.unique(y_true)
+    uClasses = np.unique(y_true)
     pc = 0.0
+    dev_each_class = {}
     for iClass in range(nClass):
-        sel_class_samples = y_true==uClass[iClass]
-        pc += -2*np.sum(np.log(y_pred_prob[sel_class_samples,iClass]))
-    return pc/y_true.size
+        uClass = uClasses[iClass]
+        sel_class_samples = (y_true==uClass)
+        nSamplesInClass = np.count_nonzero(sel_class_samples)
+        dc = -2*np.sum(np.log(y_pred_prob[sel_class_samples,iClass]))
+        dev_each_class[uClass] = dc/nSamplesInClass
+        # For computing all class total deviance:
+        pc += dc
+    dev = pc/y_true.size
+    return dev, dev_each_class
     
+def matthews_corrcoef(y_true,y_pred,cms): 
+    """
+    cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                    of dict (TP,TN,FP,FN,support)
+    y_true - np array of true labels of samples
+    y_pred - np array of predicted labels
     
-        
-        
+    """
+    uClasses = np.unique(y_true)
+    mcc_each_class = {}
+    for uClass in uClasses:
+        cm = cms[uClass] # User one-versus-rest two-class classification scheme
+        top = (cm['TP']*cm['TN'])-(cm['FP']*cm['FN'])
+        b1 = cm['TP']+cm['FP']
+        b2 = cm['TP']+cm['FN']
+        b3 = cm['TN']+cm['FP']
+        b4 = cm['TN']+cm['FN']
+        b = b1*b2*b3*b4
+        bottom = np.sqrt(b)
+        mcc_each_class[uClass] = top/bottom
+    # For multiclass, just use sklearn
+    mcc = skm.matthews_corrcoef(y_true, y_pred)
+    return mcc, mcc_each_class
+    
+def posterior_odds_multiclass(y_true,y_pred,cms):
+    """ posterior_odds = (p(D+)/p(D-))*(sen/(1-spe)) where p(D+) is the 
+     proportion of positive class in y_true """
+    unique_class_labels = np.unique(y_true)
+    n_tot = y_true.size
+    _,sen_each_class = sensitivity_multiclass(cms)         
+    _,spe_each_class = specificity_multiclass(cms)
+    post_odds_each_class = {}
+    for uClass in unique_class_labels:
+        # Prior true class probabilities                
+        pd_pos = cms[uClass]['support']/n_tot
+        pd_neg = 1.0-pd_pos
+        prior_odds = pd_pos/pd_neg
+        sen = sen_each_class[uClass]
+        spe = spe_each_class[uClass]
+        likelihood_ratio = sen/(1-spe)
+        post_odds = prior_odds*likelihood_ratio
+        post_odds_each_class[uClass] = post_odds
+    mean_post_odds = np.nanmean([x for x in post_odds_each_class.values()])
+    return mean_post_odds, post_odds_each_class
+
+                
     
