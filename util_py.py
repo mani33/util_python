@@ -9,6 +9,7 @@ Created on Wed Aug 24 22:12:39 2022
 @author: Mani
 """
 import numpy as np
+import sklearn.metrics as skm
 from itertools import combinations
 import copy
 #%% Module of common utility functions
@@ -266,30 +267,279 @@ def get_all_combinations(items):
     return cc
         
 def remove_list_elements(input_list,items_to_remove):
-    output_list = [x for x in input_list if x not in set(items_to_remove)]
+    itr = np.ravel([items_to_remove]) # To handle single element in items_to_remove
+    output_list = [x for x in input_list if x not in set(itr)]
     return output_list
     
-def accuracy_multiclass(y_true,py_pred):
-    """ Calculate accuracy for multiclass by assigning each row of py_pred to a
-    class that had the maximum probability value
+def accuracy_multiclass(cms):
+    """ Calculate accuracy for multiclass
      Inputs:
-         y_true - list of true class labels
-         yp_pred - nSamples-by-nClasses numpy array of class probabilities
+         cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                         of dict (TP,TN,FP,FN,support)
     Output:
         accuracy """
-    n_samples = np.array(y_true).size
-    pred_class_index = np.argmax(py_pred,axis=1)
-    # Convert the class indices to actual classes
-    unique_class_labels = np.sort(np.unique(y_true))
-    pred_classes = [unique_class_labels[x] for x in pred_class_index]
-    # Compute accuracy
-    correct_count = np.nonzero([x==y for x,y in zip(y_true,pred_classes)])[0].size
-    accuracy = correct_count/n_samples
-    
+        
+    # Correctly identified entries are TP of all classes (every class is a "positive"
+    # class in multiclass classification)
+    sv = []
+    nPerClass = [] # number of samples in each class
+    for _,cc in cms.items():
+        sv.append(cc['TP'])
+        nPerClass.append(cc['support'])
+    accuracy = np.sum(sv)/np.sum(nPerClass)
     return accuracy
     
+def get_confusion_matrix(y_true,y_pred,unique_class_labels):
+    """ Confusion matrix - following sklearn/Wikipedia convention, the top label of the 
+        matrix is Predicted and left side label is True class. """
+    nClass = unique_class_labels.size
+    cm = np.zeros((nClass,nClass))
+    for iRow,true_label in enumerate(unique_class_labels):
+        for jCol,pred_label in enumerate(unique_class_labels):
+            bc = sum((y_true==true_label) & (y_pred==pred_label)) # equiv to np.logical_and
+            cm[iRow,jCol] = bc
+    return cm
+   
+def get_confusion_matrix_summary(cm,unique_class_labels):
+    """ Inputs:
+    cm - confusion_matrix - np array of nClassesTrue-by-nClassesPredicted
+    Outputs:
+        cms: dict of (len=nclasses,key=class_label) of dict (TP,TN,FP,FN,support) """
+    nClasses = cm.shape[0]
+    cms = { }
+    all_class_ind = np.arange(0,nClasses)
+    for iClass,uClass in enumerate(unique_class_labels):
+        iClassInd = np.array([iClass])
+        sd = { }
+        # Row or Column indices without (wo) the iClass
+        rc_ind_wo_iClass = np.ravel(remove_list_elements(all_class_ind,iClass))       
+        # True positives------------------------------------
+        sd['TP'] = cm[iClass,iClass] # Diagonal elements
+        # True negatives------------------------------------
+        tn_elements = cm[np.ix_(rc_ind_wo_iClass,rc_ind_wo_iClass)]
+        sd['TN'] = np.sum(tn_elements)
+        # False positives------------------------------------
+        fp_elements = cm[np.ix_(rc_ind_wo_iClass,iClassInd)]
+        sd['FP'] = np.sum(fp_elements)
+        # False negatives
+        fn_elements = cm[np.ix_(iClassInd,rc_ind_wo_iClass)]
+        sd['FN'] = np.sum(fn_elements)
+        # Number of samples in each class
+        sd['support'] = np.sum(cm[iClass,:])
+        cms[uClass] = sd
+    return cms  
+    
+def sensitivity_multiclass(cms,average='macro'):
+    """ 
+    Inputs:
+        cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                        of dict (TP,TN,FP,FN,support)
+        average - 'micro' or 'macro'
+    Outputs:
+        sen - average sensitivity
+        sv - list of length nClasses; sensitivity of individual classes
+    
+    """
+    sen_each_class = []
+    match average:
+        case 'macro':
+            # Get sensitivity of each class and then average across classes           
+            for _,cc in cms.items():
+                sen_each_class.append((cc['TP']/(cc['TP']+cc['FN'])))
+            sen = np.mean(sen_each_class)
+        case 'micro':
+            # Sum up all TP and FN across classes before computing sensitivity
+            TP = []
+            FN = []
+            for _,cc in cms.items():
+                TP.append(cc['TP'])
+                FN.append(cc['FN'])
+            tp_tot = np.sum(TP)
+            fn_tot = np.sum(FN)
+            sen = tp_tot/(tp_tot+fn_tot)
+        case _:
+                raise ValueError('%s is not implemented'%average)
+
+    return sen,sen_each_class
+
+
+def specificity_multiclass(cms,average='macro'):
+    """ 
+    Inputs:
+        cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                        of dict (TP,TN,FP,FN,support)
+        average - 'micro' or 'macro'
+    Outputs:
+        spe - average specificity
+        sv - list of length nClasses; specificity of individual classes
+    """
+    spe_each_class = []
+    match average:
+        case 'macro':
+            # Get specificity of each class and then average across classes            
+            for _,cc in cms.items():               
+                spe_each_class.append(cc['TN']/(cc['TN']+cc['FP']))
+            spe = np.nanmean(spe_each_class)
+        case 'micro':
+            # Sum up all TN and FP across classes before computing specificity
+            TN = []
+            FP = []
+            for _,cc in cms.items():
+               TN.append(cc['TN'])
+               FP.append(cc['FP'])
+            tn_tot = np.sum(TN)
+            fp_tot = np.sum(FP)
+            spe = tn_tot/(tn_tot+fp_tot)
+        case _:
+                raise ValueError('%s is not implemented'%average)
+
+    return spe,spe_each_class
+
+def ppv_multiclass(cms,average='macro'):
+    """ Positive predictive value also called precision
+    Inputs:
+        cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                        of dict (TP,TN,FP,FN,support)
+        average - 'micro' or 'macro'
+    Outputs:
+        spe - average ppv
+        sv - list of length nClasses; ppv of individual classes
+    """     
+    ppv_each_class = []
+    match average:
+        case 'macro':
+            # Get f1score of each class and then average across classes
+            for _,cc in cms.items():
+                # Positive predictive value
+                v = cc['TP']/(cc['TP']+cc['FP'])
+                ppv_each_class.append(v)
+            ppv = np.nanmean(ppv_each_class)
+        case 'micro':
+            # Sum up all TP and FN across classes before computing sensitivity
+            TP = np.sum([x['TP'] for _,x in cms.items()])          
+            FP = np.sum([x['FP'] for _,x in cms.items()]) 
+            ppv = TP/(TP+FP)
+        case _:
+                raise ValueError('%s is not implemented'%average)
+
+    return ppv,ppv_each_class
+
+def npv_multiclass(cms,average='macro'):
+    """ Negative predictive value
+    Inputs:
+        cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                        of dict (TP,TN,FP,FN,support)
+        average - 'micro' or 'macro'
+    Outputs:
+        npv - average npv
+        sv - list of length nClasses; npv of individual classes
+    """
+    npv_each_class = []
+    match average:
+        case 'macro':
+            # Get f1score of each class and then average across classes
+            for _,cc in cms.items():
+                # Positive predictive value
+                v = cc['TN']/(cc['TN']+cc['FN'])
+                npv_each_class.append(v)
+            npv = np.nanmean(npv_each_class)
+        case 'micro':
+            # Sum up all TP and FN across classes before computing sensitivity
+            TN = np.sum([x['TN'] for _,x in cms.items()])          
+            FN = np.sum([x['FN'] for _,x in cms.items()]) 
+            npv = TN/(TN+FN)
+        case _:
+                raise ValueError('%s is not implemented'%average)
+
+    return npv,npv_each_class
+
+def f1score_multiclass(cms,average='macro'):
+    """ 
+    Inputs:
+        cms - confusion_matrix_summary; dict of (len=nclasses,key=class_label) 
+                                        of dict (TP,TN,FP,FN,support)
+        average - 'micro' or 'macro'
+    Outputs:
+        f1score - average f1score
+        f1_each_class - list of length nClasses; f1score of individual classes    
+    
+    """  
+    f1_each_class = []
+    match average:
+        case 'macro':
+            # Get f1score of each class and then average across classes            
+            for _,cc in cms.items():
+                # Sensitivity
+                sen = cc['TP']/(cc['TP']+cc['FN'])
+                # Precision or positive predictive value
+                ppv = cc['TP']/(cc['TP']+cc['FP'])               
+                f = 2/((1/sen)+(1/ppv))
+                print('sen,ppv,f value: %0.1f,%0.1f,%0.1f'%(sen,ppv,f))
+                # if f==np.nan:
+                #     raise ValueError('f1 score was nan')
+                f1_each_class.append(f)
+            f1score = np.nanmean(f1_each_class)
+        case 'micro':
+            # Sum up all TP and FN across classes before computing sensitivity
+            TP = np.sum([x['TP'] for _,x in cms.items()])
+            FP = np.sum([x['FP'] for _,x in cms.items()])
+            FN = np.sum([x['FN'] for _,x in cms.items()])
+            sen = TP/(TP+FN)
+            ppv = TP/(TP+FP)
+            f1score = 2/((1/sen)+(1/ppv))
+        case _:
+            raise ValueError('%s is not implemented'%average)
+
+    return f1score,f1_each_class
+
+def auc_multiclass(y_true,yp_pred,unique_class_labels):
+    """ Compute ROC-AUC using one-versus-rest strategy and get macro average of
+    the AUC of each class
+    Inputs:
+            y_true - list of true labels of samples
+            yp_pred - np array nSamples-by-nClasses of class probabilities
+            unique_class_labels - list of class labels with order matching yp_pred columns
+       Outputs:
+           auc_mean - averag AUC
+           fpr_grid - false positive rate coordinates for the average ROC curve
+           mean_tpr - averaged true positive rate for the average ROC curve           
+           data - dict (lenth=nClasses) of sub-dicts; each sub-dict contains
+           'fpr','tpr','th' and 'auc' for one-vs-rest based roc data
+        """
+        
+    # Compute AUC for each class versus rest
+    # Set the labels of current class as 1 and the rest as 0
+    data = {}
+    nClasses = len(unique_class_labels)
+    for iClass,yp in enumerate(yp_pred.T):        
+        c = unique_class_labels[iClass]
+        data[c] = {}
+        yt = np.ones_like(y_true)
+        yt[y_true!= c] = 0       
+        data[c]['fpr'],data[c]['tpr'],data[c]['th'] = skm.roc_curve(yt, yp)
+        data[c]['auc'] = skm.auc(data[c]['fpr'],data[c]['tpr'])
+    # Average AUC across the classes
+    auc_mean = np.mean([data[c]['auc'] for c in unique_class_labels])
+    # Average tp and fp after interpolating onto a common fpr
+    fpr_grid = np.linspace(0.0,1.0,1000)
+    mean_tpr = np.zeros_like(fpr_grid)
+    for c in unique_class_labels:
+        mean_tpr += np.interp(fpr_grid,data[c]['fpr'],data[c]['tpr'])
+    mean_tpr/=nClasses
+    
+    return auc_mean,fpr_grid,mean_tpr,data
+
+def deviance_multiclass(y_true,y_pred_prob):
+    """ Deviance per sample"""
+    nClass = y_pred_prob.shape[1]
+    uClass = np.unique(y_true)
+    pc = 0.0
+    for iClass in range(nClass):
+        sel_class_samples = y_true==uClass[iClass]
+        pc += -2*np.sum(np.log(y_pred_prob[sel_class_samples,iClass]))
+    return pc/y_true.size
     
     
-    
-    
+        
+        
     
