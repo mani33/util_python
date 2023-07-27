@@ -11,6 +11,7 @@ Created on Wed Aug 24 22:12:39 2022
 import numpy as np
 import sklearn.metrics as skm
 from itertools import combinations
+import scipy.stats as stat
 import copy
 #%% Module of common utility functions
 def gausswin(N,alpha):
@@ -531,17 +532,21 @@ def auc_multiclass(y_true,yp_pred,unique_class_labels):
         c = unique_class_labels[iClass]
         roc_curve_data[c] = {}
         yt = np.ones_like(y_true)
-        yt[y_true!= c] = 0       
+        yt[y_true!= c] = 0
         roc_curve_data[c]['fpr'],roc_curve_data[c]['tpr'],roc_curve_data[c]['th'] = skm.roc_curve(yt, yp)
         auc = skm.auc(roc_curve_data[c]['fpr'],roc_curve_data[c]['tpr'])
         auc_each_class[c] = auc
     # Average AUC across the classes
     auc_mean = np.mean([v for v in auc_each_class.values()])
     # Average tp and fp after interpolating onto a common fpr
-    fpr_grid = np.linspace(0.0,1.0,1000)
-    mean_tpr = np.zeros_like(fpr_grid)
+    fpr_grid = np.linspace(0.0,1.0,100)
+    mean_tpr = np.zeros_like(fpr_grid)    
     for c in unique_class_labels:
-        mean_tpr += np.interp(fpr_grid,roc_curve_data[c]['fpr'],roc_curve_data[c]['tpr'])
+        xx = roc_curve_data[c]['fpr']
+        yy = roc_curve_data[c]['tpr']
+        tpri = np.interp(fpr_grid,xx,yy)
+        mean_tpr += np.copy(tpri)
+        roc_curve_data[c]['tpr_interp'] = np.copy(tpri)
     mean_tpr/=nClasses
     
     return auc_mean, auc_each_class, fpr_grid, mean_tpr, roc_curve_data
@@ -608,5 +613,55 @@ def posterior_odds_multiclass(y_true,y_pred,cms):
     mean_post_odds = np.nanmean([x for x in post_odds_each_class.values()])
     return mean_post_odds, post_odds_each_class
 
+def post_test_prob(posterior_odds):
+    ptp = posterior_odds/(1+posterior_odds)
+    return ptp    
+
+def set_common_subplot_params(plt):
+    """
+    # Set parameters that will be common for all subplots
+    Inputs: 
+        plt - matplotlib.pyplot object
+    Ouputs:
+        None
+    """
+    legend_label_size = 14
+    title_size = 14
+    x_y_tick_label_size = 14
+    tick_len = 3
+    line_width= 1
+    fontname = 'Arial'
+    params = {
+        'font.family': 'sans-serif',
+        'font.sans-serif': [fontname],
+        'axes.titlesize': title_size,
+        'axes.linewidth': line_width,
+        'axes.labelsize': legend_label_size,
+        'xtick.labelsize': x_y_tick_label_size,
+        'ytick.labelsize': x_y_tick_label_size,
+        'xtick.major.size': tick_len,
+        'xtick.major.width': line_width,
+        'ytick.major.size': tick_len,
+        'ytick.major.width': line_width,
+        'text.usetex': False,
+        'legend.fontsize':legend_label_size
+        }
+    plt.rcParams.update(params)
                 
+def roc_auc_ci(auc,n_pos,n_neg):
+    """ Compute 95% Confidence interval for a given value of AUC. Formulas are based
+    on Hanley, J.A. and NcNeil, B.J. 1982. 'The Meaning and Use of the Area under
+    a Receiver Operating Characteristic(ROC) Curve.' Radiology, Vol 148, 29-36."""
+    aucs = auc**2
+    q1 = auc/(2-auc)
+    q2 = (2*(aucs))/(1+auc)
+    nu = auc*(1-auc) + (n_pos-1)*(q1-aucs) + (n_neg-1)*(q2-aucs)
+    de = n_pos*n_neg
+    se = np.sqrt(nu/de)
+    ciz = stat.norm.interval(confidence=0.95,loc=0,scale=1)
+    ci = auc + np.array(ciz)*se
+    return ci
+    
+    
+    
     
