@@ -12,7 +12,6 @@ import numpy as np
 import sklearn.metrics as skm
 from itertools import combinations
 import scipy.stats as stat
-import copy
 #%% Module of common utility functions
 def gausswin(N,alpha):
     L = N-1
