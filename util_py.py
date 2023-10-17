@@ -11,6 +11,7 @@ Created on Wed Aug 24 22:12:39 2022
 import numpy as np
 import sklearn.metrics as skm
 from itertools import combinations
+import pickle as pkl
 import scipy.stats as stat
 #%% Module of common utility functions
 def gausswin(N,alpha):
@@ -29,6 +30,17 @@ def get_gausswin(sigma,bin_width):
     gw = gw/np.sum(gw)
     return gw
 
+def get_pickled_data(data_filename):
+    fh = open(data_filename,'rb')
+    mdata = pkl.load(fh)
+    fh.close()
+    return mdata
+
+def pickle_data(mdata,save_filename):
+    fh = open(save_filename,'wb')
+    pkl.dump(mdata,fh)
+    fh.close()
+    
 def std_robust(x):
     # Robust standard deviation
     s = np.median(np.abs((x-np.median(x)))/0.6745)
@@ -228,6 +240,28 @@ def create_psth_bins(pre,post,bin_width,n_decimals=5):
     bin_edges = np.concatenate((bins_pre,bins_post))
     bin_cen = bin_edges[:-1]+bin_width/2
     return bin_edges,bin_cen
+
+def format_figure(plt,**kwargs):
+    params = {}
+    params['font_name'] = 'Arial'
+    params['font_size'] = 9
+    params['nondata_col'] = [0.15,0.15,0.15]
+    for key,v in kwargs.items():
+        if key in params.keys():
+            params[key] = v
+       
+    plt.rcParams['font.family'] = params['font_name']
+    plt.rcParams['font.size'] = params['font_size']
+    plt.rcParams['axes.edgecolor'] = params['nondata_col']
+    plt.rcParams['xtick.color'] = params['nondata_col']
+    plt.rcParams['xtick.labelcolor'] = params['nondata_col']
+    plt.rcParams['ytick.color'] = params['nondata_col']
+    plt.rcParams['ytick.labelcolor'] = params['nondata_col']
+    plt.rcParams['text.color'] = params['nondata_col']
+    plt.rcParams['axes.labelcolor'] = params['nondata_col']
+    plt.rcParams['legend.labelcolor'] = params['nondata_col']
+    plt.rcParams['legend.fontsize'] = params['font_size']
+    
         
 def make_axes(plt,w,h,dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
@@ -400,7 +434,6 @@ def specificity_multiclass(cms,average='macro'):
             spe = tn_tot/(tn_tot+fp_tot)
         case _:
                 raise ValueError('%s is not implemented'%average)
-
     return spe,spe_each_class
 
 def ppv_multiclass(cms,average='macro'):
@@ -431,7 +464,6 @@ def ppv_multiclass(cms,average='macro'):
             ppv = TP/(TP+FP)
         case _:
                 raise ValueError('%s is not implemented'%average)
-
     return ppv,ppv_each_class
 
 def npv_multiclass(cms,average='macro'):
@@ -462,7 +494,6 @@ def npv_multiclass(cms,average='macro'):
             npv = TN/(TN+FN)
         case _:
                 raise ValueError('%s is not implemented'%average)
-
     return npv,npv_each_class
 
 def f1score_multiclass(cms,average='macro'):
@@ -503,7 +534,6 @@ def f1score_multiclass(cms,average='macro'):
             f1score = 2/((1/sen)+(1/ppv))
         case _:
             raise ValueError('%s is not implemented'%average)
-
     return f1score,f1_each_class
 
 def auc_multiclass(y_true,yp_pred,unique_class_labels):
@@ -647,19 +677,25 @@ def set_common_subplot_params(plt):
         }
     plt.rcParams.update(params)
                 
-def roc_auc_ci(auc,n_pos,n_neg):
+def roc_auc_ci(auc,n_true_pos,n_true_neg):
     """ Compute 95% Confidence interval for a given value of AUC. Formulas are based
     on Hanley, J.A. and NcNeil, B.J. 1982. 'The Meaning and Use of the Area under
     a Receiver Operating Characteristic(ROC) Curve.' Radiology, Vol 148, 29-36."""
     aucs = auc**2
     q1 = auc/(2-auc)
-    q2 = (2*(aucs))/(1+auc)
-    nu = auc*(1-auc) + (n_pos-1)*(q1-aucs) + (n_neg-1)*(q2-aucs)
-    de = n_pos*n_neg
+    q2 = (2*aucs)/(1+auc)
+    nu = auc*(1-auc) + (n_true_pos-1)*(q1-aucs) + (n_true_neg-1)*(q2-aucs)
+    de = n_true_pos*n_true_neg
     se = np.sqrt(nu/de)
     ciz = stat.norm.interval(confidence=0.95,loc=0,scale=1)
     ci = auc + np.array(ciz)*se
     return ci
+    
+def find_closest_val_index(x,v):
+    # In the given list x, find the location of the value closest to v
+    x = np.ravel(np.array(x))
+    ind = np.argmin(np.abs(x-v))
+    return ind
     
     
     
