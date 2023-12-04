@@ -697,6 +697,7 @@ def find_closest_val_index(x,v):
     ind = np.argmin(np.abs(x-v))
     return ind
     
-    
+# def roc_curve(y_true,y_pred,pos_label)
+#     # Compute     
     
     
