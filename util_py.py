@@ -13,6 +13,9 @@ import sklearn.metrics as skm
 from itertools import combinations
 import pickle as pkl
 import scipy.stats as stat
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+import matplotlib.pyplot as plt
+
 #%% Module of common utility functions
 def gausswin(N,alpha):
     L = N-1
@@ -699,7 +702,17 @@ def find_closest_val_index(x,v):
     ind = np.argmin(np.abs(x-v))
     return ind
     
-# def roc_curve(y_true,y_pred,pos_label)
-#     # Compute     
+def get_frame(fig):
+    """ Create a 2d numpy array of the plots in the given figure
+    Inputs:
+        fig - matplotlib figure handle or object
+    Ouputs:
+        im - 3d numpy array of the color image of the given figure
+    """
+    canvas = FigureCanvasAgg(fig)
+    canvas.draw()
+    im = np.array(canvas.buffer_rgba())
+    return im
+    
     
     
