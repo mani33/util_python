@@ -14,8 +14,9 @@ from itertools import combinations
 import pickle as pkl
 import scipy.stats as stat
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-import matplotlib.pyplot as plt
-
+from contextlib import closing
+from zipfile import ZipFile
+import os
 #%% Module of common utility functions
 def gausswin(N,alpha):
     L = N-1
@@ -713,6 +714,15 @@ def get_frame(fig):
     canvas.draw()
     im = np.array(canvas.buffer_rgba())
     return im
+    
+def get_zipped_file_list(zip_file_name):
+    # Get list of files inside the zipped file 
+    file_list = []
+    with closing(ZipFile(zip_file_name)) as arch:
+       ar = arch.infolist()      
+       file_list = [os.path.basename(x.filename) for x in ar if not x.is_dir()]
+    return file_list  
+
     
     
     
