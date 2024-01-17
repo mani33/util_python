@@ -18,6 +18,13 @@ from contextlib import closing
 from zipfile import ZipFile
 import os
 #%% Module of common utility functions
+def robust_p2p(x):
+    # User percentiles to compute peak to peak height to ignore outliers
+    q = np.quantile(x,[0.01,0.99])
+    p2p = np.abs(np.diff(q))[0]
+    print(p2p.shape)
+    return p2p
+
 def gausswin(N,alpha):
     L = N-1
     n = np.arange(0,N)-L/2
@@ -723,6 +730,34 @@ def get_zipped_file_list(zip_file_name):
        file_list = [os.path.basename(x.filename) for x in ar if not x.is_dir()]
     return file_list  
 
+def dos2unix(input_filename,output_filename):
+    """ Convert dos linefeeds (crlf) to unix (lf)
+    Example usage:
+        dos2unix('test.pkl','test.pkl')
+    """
+    contents = ''
+    outsize = 0
     
+    with open(input_filename,'rb') as infile:
+        contents = infile.read()
+    with open(output_filename,'wb') as outfile:
+        for line in contents.splitlines():
+            outsize+=len(line)+1
+            outfile.write(line+str.encode('\n'))
+    print('Done. Saved %s bytes.'%(len(contents)-outsize))
+            
+def polygon_area(x,y):
+    """ Compute polygon area based on the Shoelace formula: copied from:
+        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+    Inputs:
+        x,y - 1d numpy arrays of x and y coordinates; points in x and y must be 
+        ordered in the clockwise or counter-clockwise direction in the xy-plane;
+        they can't be in random order.
+    Output:
+        a - area of the given polygon
+    """
+    return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+    
+        
     
     
