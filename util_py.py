@@ -18,9 +18,9 @@ from contextlib import closing
 from zipfile import ZipFile
 import os
 #%% Module of common utility functions
-def robust_p2p(x):
+def robust_p2p(x,lower_q_th=0.01,upper_q_th=0.99):
     # User percentiles to compute peak to peak height to ignore outliers
-    q = np.quantile(x,[0.01,0.99])
+    q = np.quantile(x,[lower_q_th,upper_q_th])
     p2p = np.abs(np.diff(q))[0]
     print(p2p.shape)
     return p2p
