@@ -758,6 +758,61 @@ def polygon_area(x,y):
     """
     return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
     
+
+def make_segments(x, n, p, valid_last_seg=False):
+    """
+    Segment the given vector into segments with or without overlap.
+    
+    make_segments(X,N,P) partitions the signal vector X into
+    N-element segments overlapping by P elements (set P=0 for contiguous partition).
+    The last segment may not have N elements from the segmentation. Set the
+    valid_last_seg to true to exclude the last segment that is not full
+    length. Otherwise, by default, short last segment will be made to full
+    length (N) using NaN's making up for missing data points. Output Y is a
+    N-by-Num_Segments 2d numpy array.
+    
+    Inputs:
+        x - 1d numpy array of data to be segmented
+        n - int, segment size
+        p - int, overlap size
+    Output:
+        Y - 2d numpy array of shape (n,nSegments)
+    """
+    assert n > 0, 'N must be > 0'
+    assert p >= 0, 'P must be >= 0'
+    assert p < n, 'Overlap length(p) must be less than segment length(n)'
+    
+    n,p = int(n),int(p)
+    nx = x.size
+    done = False
+    Y = []
+    i = 0
+    while not done:       
+        overlap_offset = i * p
+        # Idea: For contiguous segmenting, you will use (i-1)*n+1 as the
+        # segment starting index. Because of overlap, pull this index to the
+        # left by (i-1)*p.
+        seg_begin = (i * n) - overlap_offset
+        seg_end = seg_begin + n
+
+        # Are we are in the last segment?
+        in_last_seg = seg_begin > (nx - n)
+
+        if not in_last_seg:  # Simpler life when NOT in the last segment
+            Y.append(x[seg_begin:seg_end])
+        else:  # In the last segment!
+            done = True
+            # Segment end can't go beyond available data
+            seg_end = np.min([nx, seg_end])
+            seg_data = x[seg_begin:seg_end]            
+            if valid_last_seg:
+                if seg_data.size == n:  # Take only full length last segments
+                    Y.append(seg_data)
+            else:  # Fill in with nan if necessary
+                n_fill = n - seg_data.size               
+                Y.append(np.hstack([seg_data, np.full((n_fill,), np.nan)]))
+        i += 1
+    return np.array(Y).T
         
     
     
