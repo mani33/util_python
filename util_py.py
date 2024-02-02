@@ -13,11 +13,91 @@ import sklearn.metrics as skm
 from itertools import combinations
 import pickle as pkl
 import scipy.stats as stat
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from contextlib import closing
 from zipfile import ZipFile
 import os
+import pingouin as pg
+import scipy.cluster.hierarchy as sch
+import pandas as pd
+
 #%% Module of common utility functions
+def scatter_equal(v1,v2):
+    v1,v2 = np.array(v1),np.array(v2)
+    plt.scatter(v1,v2,s=3,c='k')
+    pv = np.hstack((v1,v2))
+    m,ma = np.min(pv),np.max(pv)
+    plt.xlim(m,ma)
+    plt.ylim(m,ma)
+    plt.plot([m,ma],[m,ma],color='r')
+    plt.axis('image')
+    return plt.gca()
+
+def cluster_corr(corr_array, inplace=False):
+    """
+    Rearranges the correlation matrix, corr_array, so that groups of highly 
+    correlated variables are next to eachother 
+    
+    Parameters
+    ----------
+    corr_array : pandas.DataFrame or numpy.ndarray
+        a NxN correlation matrix 
+        
+    Returns
+    -------
+    pandas.DataFrame or numpy.ndarray
+        a NxN correlation matrix with the columns and rows rearranged
+    """
+    pairwise_distances = sch.distance.pdist(corr_array)
+    linkage = sch.linkage(pairwise_distances, method='complete')
+    cluster_distance_threshold = pairwise_distances.max()/2
+    idx_to_cluster_array = sch.fcluster(linkage, cluster_distance_threshold, 
+                                        criterion='distance')
+    idx = np.argsort(idx_to_cluster_array)
+    
+    if not inplace:
+        corr_array = corr_array.copy()
+    
+    if isinstance(corr_array, pd.DataFrame):
+        return corr_array.iloc[idx, :].T.iloc[idx, :]
+    return corr_array[idx, :][:, idx],idx
+
+def plot_corr_mat(r,feature_names,show_rval=False,abs_corr=False):
+    # Plot correlation matrix as an image with locations named by the given
+    # feature list.
+    plt.figure()
+    vmin,vmax = -1,1
+    cmap='coolwarm'
+    if abs_corr: 
+        r = np.abs(r)
+        vmin=0
+        cmap = 'winter'
+        
+    plt.imshow(r,cmap=cmap,vmin=vmin,vmax=vmax)
+    plt.colorbar()
+    ticks = np.arange(r.shape[0])
+    ax = plt.gca()
+    ax.set_yticks(ticks,labels=feature_names)
+    ax.set_xticks(ticks,labels=feature_names,rotation=90,
+                  rotation_mode='anchor',ha='right')
+    plt.tight_layout()
+    return ax
+        
+def rm_corr_mat(df,features,grouping_var):
+    # Compute repeated measures correlation between all pairs of features using
+    # Bakdash & Marusich 2017 paper implemented in pingouin package
+    features = np.array(features)
+    corr = np.ones((features.size,features.size))
+    for i,fi in enumerate(features):
+        for j,fj in enumerate(features):
+            if j > i:
+                corr[i,j] = float(pg.rm_corr(data=df,x=fi,y=fj,subject=grouping_var)['r'])
+            elif i > j: # copy from symmetric location
+                corr[i,j] = corr[j,i]
+                
+    return corr
+                
 def robust_p2p(x,lower_q_th=0.01,upper_q_th=0.99):
     # User percentiles to compute peak to peak height to ignore outliers
     q = np.quantile(x,[lower_q_th,upper_q_th])
