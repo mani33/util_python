@@ -23,6 +23,16 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 
 #%% Module of common utility functions
+def get_figure_position():
+    # Returns a tuple of the pixel position (x,y,dx,dy) of the current figure
+    x_y_dx_dy = plt.get_current_fig_manager().window.geometry().getRect()
+    
+    return x_y_dx_dy
+def set_figure_position(rect):
+    # Set the position of the current figure by the given tuple (rect) of new
+    # position. rect is a list or tuple of 4 elements: x,y,dx,dy
+    plt.get_current_fig_manager().window.setGeometry(*rect)
+    
 def format_pstr(p):
     if p < 0.001:
         ps = 'p < 0.001'
@@ -108,10 +118,10 @@ def rm_corr_mat(df,features,grouping_var):
     return corr
                 
 def robust_p2p(x,lower_q_th=0.01,upper_q_th=0.99):
-    # User percentiles to compute peak to peak height to ignore outliers
+    # Use percentiles to compute peak to peak height to ignore outliers
     q = np.quantile(x,[lower_q_th,upper_q_th])
     p2p = np.abs(np.diff(q))[0]
-    print(p2p.shape)
+    
     return p2p
 
 def gausswin(N,alpha):
