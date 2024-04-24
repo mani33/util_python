@@ -33,6 +33,14 @@ def set_figure_position(rect):
     # position. rect is a list or tuple of 4 elements: x,y,dx,dy
     plt.get_current_fig_manager().window.setGeometry(*rect)
     
+def move_figure(x,y):
+    # Move current figure's top left corner to the given (x,y) position
+    rect = get_figure_position()
+    set_figure_position([x,y,rect[2],rect[3]])
+def box_off(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
 def format_pstr(p):
     if p < 0.001:
         ps = 'p < 0.001'
@@ -353,6 +361,8 @@ def create_psth_bins(pre,post,bin_width,n_decimals=5):
 
 def format_figure(plt,**kwargs):
     params = {}
+    params['linewidth'] = 0.5
+    params['axes_linewidth'] = 0.5
     params['font_name'] = 'Arial'
     params['font_size'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
@@ -371,8 +381,13 @@ def format_figure(plt,**kwargs):
     plt.rcParams['axes.labelcolor'] = params['nondata_col']
     plt.rcParams['legend.labelcolor'] = params['nondata_col']
     plt.rcParams['legend.fontsize'] = params['font_size']
+    plt.rcParams['lines.linewidth'] = params['linewidth']
+    plt.rcParams['axes.linewidth'] = params['axes_linewidth']
+    plt.rcParams['xtick.major.width'] = params['axes_linewidth']
+    plt.rcParams['xtick.minor.width'] = params['axes_linewidth']
+    plt.rcParams['ytick.major.width'] = params['axes_linewidth']
+    plt.rcParams['ytick.minor.width'] = params['axes_linewidth']
     
-        
 def make_axes(plt,wh,dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
     # Add space for x and y ticks and labels
