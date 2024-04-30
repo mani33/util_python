@@ -23,11 +23,25 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 
 #%% Module of common utility functions
+def rsquared_lmm(mod):
+    # Compute R2 as suggested by Nakagawa & Schielzeth (2012)
+    # Input mod is a fitted linear mixed model
+    var_resid = mod.scale
+    var_re = float(mod.cov_re.iloc[0])
+    var_fe = mod.predict().var()
+    tot_var = var_resid + var_re + var_fe
+    r2m = var_fe/tot_var # marginal
+    r2c = (var_fe+var_re)/tot_var # conditional
+    r2 = dict(marginal=r2m,conditional=r2c)
+    
+    return r2
+
 def get_figure_position():
     # Returns a tuple of the pixel position (x,y,dx,dy) of the current figure
     x_y_dx_dy = plt.get_current_fig_manager().window.geometry().getRect()
     
     return x_y_dx_dy
+
 def set_figure_position(rect):
     # Set the position of the current figure by the given tuple (rect) of new
     # position. rect is a list or tuple of 4 elements: x,y,dx,dy
@@ -37,6 +51,7 @@ def move_figure(x,y):
     # Move current figure's top left corner to the given (x,y) position
     rect = get_figure_position()
     set_figure_position([x,y,rect[2],rect[3]])
+    
 def box_off(ax):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
