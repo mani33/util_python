@@ -137,6 +137,24 @@ def std_robust(x):
     s = np.median(np.abs((x-np.median(x)))/0.6745)
     return s
 
+def find_contiguous_segs(x,g):
+    """Find beginning and ending indices of contiguous segments, which are 
+    defined to be any sequence of elements with a gap of g or less.
+    Inputs:
+        x - 1d list or array
+        g - float specifying the maxmimum gap between adjacent elements of x
+    Outputs:
+        start_ind - 1d numpy numpy array of int; starting (inclusive) index position of segments
+        end_ind   - 1d numpy numpy array of int; ending (inclusive) index position of segments
+    """
+    x = np.array(x)
+    dx = np.diff(x)
+    bdx = (dx <= g).astype(float)
+    s1,s2 = find_repeats(bdx, 1)
+    s2 = s2+1
+   
+    return s1,s2
+    
 def find_repeats(x,b,splice_gap=0):
     """    
     find_repeats(x, b, splice_gap)
@@ -148,8 +166,8 @@ def find_repeats(x,b,splice_gap=0):
         b - scalar
         splice_gap - scalar
     Outputs:
-        start_ind - 1d numpy array of int; starting index position of repeats
-        end_ind   - 1d numpy array of int; ending index position of repeats
+        start_ind - 1d numpy array of int; starting index (inclusive) position of repeats
+        end_ind   - 1d numpy array of int; ending index (inclusive) position of repeats
     
     Note that single occurrence of b with non-b values before and after will 
     also be included in finding. See Example1 below. Such occurrences will 
@@ -221,9 +239,9 @@ def mprint(*args,verbose=True):
     if verbose:
         for v in args:
             print(v,end=" ",flush=True)
-def intersect(A,B):
+def intersect(A,B,logical_indices=False):
     """ Return intersection of A and B and indices of A and B matching the common
-    elements """
+    elements. Set logical_indices to True if return logical indices of A and B. """
     As = set(A)
     Bs = set(B)
     ABi = list(As.intersection(Bs))
@@ -231,8 +249,13 @@ def intersect(A,B):
     iB = []
     for intElem in ABi:
         iA.append(np.nonzero([a==intElem for a in A])[0])   
-        iB.append(np.nonzero([b==intElem for b in B])[0])      
-    return ABi,np.hstack(iA),np.hstack(iB)
+        iB.append(np.nonzero([b==intElem for b in B])[0])
+    iA,iB = np.hstack(iA),np.hstack(iB)
+    if logical_indices:
+        tiA,tiB = np.zeros_like(A,dtype=bool),np.zeros_like(B,dtype=bool)
+        tiA[iA],tiB[iB] = True,True
+        iA,iB = tiA,tiB
+    return ABi,iA,iB
 def false_positive_count(y_true,y_pred,positive_class=1):
     pc = positive_class
     fp = np.nonzero([(yt!=pc)and(yp==pc) for yt,yp in zip(y_true,y_pred)])[0].size
