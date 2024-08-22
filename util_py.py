@@ -72,9 +72,9 @@ def format_pstr(p):
         
     return ps
 
-def scatter_equal(v1,v2,xy_lim=None,title=None):
+def scatter_equal(v1,v2,xy_lim=None,title=None,c='k'):
     v1,v2 = np.ravel(np.array(v1)),np.ravel(np.array(v2))
-    plt.scatter(v1,v2,s=8,c='k',zorder=2)
+    plt.scatter(v1,v2,s=8,c=c,zorder=2)
     pv = np.hstack((v1,v2))
     if xy_lim==None:
         m,ma = np.min(pv),np.max(pv)
