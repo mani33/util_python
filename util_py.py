@@ -23,16 +23,71 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 
 #%% Module of common utility functions
-def scatter_equal(v1,v2):
-    v1,v2 = np.array(v1),np.array(v2)
-    plt.scatter(v1,v2,s=3,c='k')
+def colvec(one_dim_array):
+    # Convert one dimentional numpy array to 2d column vector
+    return np.reshape(one_dim_array,(-1,1))
+    
+def rsquared_lmm(mod):
+    # Compute R2 as suggested by Nakagawa & Schielzeth (2012)
+    # Input mod is a fitted linear mixed model
+    var_resid = mod.scale
+    var_re = float(mod.cov_re.iloc[0])
+    var_fe = mod.predict().var()
+    tot_var = var_resid + var_re + var_fe
+    r2m = var_fe/tot_var # marginal
+    r2c = (var_fe+var_re)/tot_var # conditional
+    r2 = dict(marginal=r2m,conditional=r2c)
+    
+    return r2
+
+def rmse(y,yh):
+    # Root mean squared error between y and yh
+    return np.sqrt(np.mean((np.ravel(y)-np.ravel(yh))**2))
+
+def get_figure_position():
+    # Returns a tuple of the pixel position (x,y,dx,dy) of the current figure
+    x_y_dx_dy = plt.get_current_fig_manager().window.geometry().getRect()
+    
+    return x_y_dx_dy
+
+def set_figure_position(rect):
+    # Set the position of the current figure by the given tuple (rect) of new
+    # position. rect is a list or tuple of 4 elements: x,y,dx,dy
+    plt.get_current_fig_manager().window.setGeometry(*rect)
+    
+def move_figure(x,y):
+    # Move current figure's top left corner to the given (x,y) position
+    rect = get_figure_position()
+    set_figure_position([x,y,rect[2],rect[3]])
+    
+def box_off(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+def format_pstr(p):
+    if p < 0.001:
+        ps = 'p < 0.001'
+    else:
+        ps = 'p = %0.3f'%p
+        
+    return ps
+
+def scatter_equal(v1,v2,xy_lim=None,title=None):
+    v1,v2 = np.ravel(np.array(v1)),np.ravel(np.array(v2))
+    plt.scatter(v1,v2,s=8,c='k',zorder=2)
     pv = np.hstack((v1,v2))
-    m,ma = np.min(pv),np.max(pv)
+    if xy_lim==None:
+        m,ma = np.min(pv),np.max(pv)
+    else:
+        m,ma = xy_lim[0],xy_lim[1]
     plt.xlim(m,ma)
     plt.ylim(m,ma)
-    plt.plot([m,ma],[m,ma],color='r')
+    plt.plot([m,ma],[m,ma],color='r',zorder=1)
     plt.axis('image')
-    return plt.gca()
+    if title != None:
+        plt.title(title)
+    plt.tight_layout()
+   
 
 def cluster_corr(corr_array, inplace=False):
     """
@@ -99,10 +154,10 @@ def rm_corr_mat(df,features,grouping_var):
     return corr
                 
 def robust_p2p(x,lower_q_th=0.01,upper_q_th=0.99):
-    # User percentiles to compute peak to peak height to ignore outliers
+    # Use percentiles to compute peak to peak height to ignore outliers
     q = np.quantile(x,[lower_q_th,upper_q_th])
     p2p = np.abs(np.diff(q))[0]
-    print(p2p.shape)
+    
     return p2p
 
 def gausswin(N,alpha):
@@ -357,6 +412,8 @@ def create_psth_bins(pre,post,bin_width,n_decimals=5):
 
 def format_figure(plt,**kwargs):
     params = {}
+    params['linewidth'] = 0.5
+    params['axes_linewidth'] = 0.5
     params['font_name'] = 'Arial'
     params['font_size'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
@@ -375,8 +432,13 @@ def format_figure(plt,**kwargs):
     plt.rcParams['axes.labelcolor'] = params['nondata_col']
     plt.rcParams['legend.labelcolor'] = params['nondata_col']
     plt.rcParams['legend.fontsize'] = params['font_size']
+    plt.rcParams['lines.linewidth'] = params['linewidth']
+    plt.rcParams['axes.linewidth'] = params['axes_linewidth']
+    plt.rcParams['xtick.major.width'] = params['axes_linewidth']
+    plt.rcParams['xtick.minor.width'] = params['axes_linewidth']
+    plt.rcParams['ytick.major.width'] = params['axes_linewidth']
+    plt.rcParams['ytick.minor.width'] = params['axes_linewidth']
     
-        
 def make_axes(plt,wh,dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
     # Add space for x and y ticks and labels
