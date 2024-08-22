@@ -74,10 +74,12 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     # masses of the original dataset.
     
     # Phew!        
- 
+    
     # Check inputs
     assert bin_cen_t.ndim==1,'bin_cen_t must be 1d numpy array'
-    assert (r.ndim==2) & (np.remainder(r.shape[1],2)==0),'r must be a 2d numpy array and should have even number of columns'
+    assert (r.ndim==2) & (np.remainder(r.shape[1],2)==0),\
+    'r must be a 2d numpy array and should have even number of columns'
+    assert ~np.any(np.isnan(r)), 'Nan not allowed in the data array'
     
     # Step-1: Get cluster-mass stat for the actual data
     _,abs_clus_stat_sums,clus_start_ind,clus_end_ind = \
