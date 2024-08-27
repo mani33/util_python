@@ -72,22 +72,24 @@ def format_pstr(p):
         
     return ps
 
-def scatter_equal(v1,v2,xy_lim=None,title=None,c='k'):
+def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
     v1,v2 = np.ravel(np.array(v1)),np.ravel(np.array(v2))
-    plt.scatter(v1,v2,s=8,c=c,zorder=2)
+    if ax == None:
+        ax = plt.gca()    
+    ax.scatter(v1,v2,s=4,c=c,zorder=1)    
     pv = np.hstack((v1,v2))
     if xy_lim==None:
         m,ma = np.min(pv),np.max(pv)
     else:
         m,ma = xy_lim[0],xy_lim[1]
-    plt.xlim(m,ma)
-    plt.ylim(m,ma)
-    plt.plot([m,ma],[m,ma],color='r',zorder=1)
+
     plt.axis('image')
     if title != None:
-        plt.title(title)
+        ax.set_title(title)
     plt.tight_layout()
-   
+    ax.set_xlim((m,ma))
+    ax.set_ylim((m,ma))
+    ax.plot([m,ma],[m,ma],color='r',zorder=2)
 
 def cluster_corr(corr_array, inplace=False):
     """
