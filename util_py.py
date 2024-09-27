@@ -76,6 +76,7 @@ def format_pstr(p):
         
     return ps
 
+
 def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
     v1,v2 = np.ravel(np.array(v1)),np.ravel(np.array(v2))
     if ax == None:
@@ -94,6 +95,7 @@ def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
     ax.set_xlim((m,ma))
     ax.set_ylim((m,ma))
     ax.plot([m,ma],[m,ma],color='r',zorder=2)
+
 
 def cluster_corr(corr_array, inplace=False):
     """
