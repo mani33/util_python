@@ -64,16 +64,17 @@ def format_pstr(p):
         
     return ps
 
-def scatter_equal(v1,v2):
+def scatter_equal(v1,v2,s=8):
     v1,v2 = np.array(v1),np.array(v2)
-    plt.scatter(v1,v2,s=8,c='k',zorder=2)
+    plt.scatter(v1,v2,s=s,c='k',zorder=2)
     pv = np.hstack((v1,v2))
     m,ma = np.min(pv),np.max(pv)
     plt.xlim(m,ma)
     plt.ylim(m,ma)
     plt.plot([m,ma],[m,ma],color='r',zorder=1)
-    plt.axis('image')
+    plt.axis('image')   
     plt.tight_layout()
+    
     return plt.gca()
 
 def cluster_corr(corr_array, inplace=False):
