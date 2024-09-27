@@ -23,6 +23,10 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 
 #%% Module of common utility functions
+def mkdir(dir_name):
+    if not (os.path.exists(dir_name)):
+        os.mkdir(dir_name)
+
 def colvec(one_dim_array):
     # Convert one dimentional numpy array to 2d column vector
     return np.reshape(one_dim_array,(-1,1))

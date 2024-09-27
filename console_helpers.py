@@ -7,5 +7,5 @@ meant to be called from the iPython console.
 """
 import matplotlib.pyplot as plt
 
-def close():
+def closeall():
     plt.close('all')
