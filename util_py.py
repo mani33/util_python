@@ -23,6 +23,10 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 
 #%% Module of common utility functions
+def mkdir(dir_name):
+    if not (os.path.exists(dir_name)):
+        os.mkdir(dir_name)
+
 def colvec(one_dim_array):
     # Convert one dimentional numpy array to 2d column vector
     return np.reshape(one_dim_array,(-1,1))
@@ -72,6 +76,7 @@ def format_pstr(p):
         
     return ps
 
+
 def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
     v1,v2 = np.ravel(np.array(v1)),np.ravel(np.array(v2))
     if ax == None:
@@ -90,6 +95,7 @@ def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
     ax.set_xlim((m,ma))
     ax.set_ylim((m,ma))
     ax.plot([m,ma],[m,ma],color='r',zorder=2)
+
 
 def cluster_corr(corr_array, inplace=False):
     """
