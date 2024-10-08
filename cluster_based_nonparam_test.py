@@ -16,6 +16,8 @@ import scipy.stats as sps
 import util_py as upy
 from copy import deepcopy
 import time
+import warnings
+from joblib import Parallel, delayed
 
 def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     """ 
@@ -52,7 +54,7 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     
     # Once you have the list of t-statistic or other statistic, you select
     # the ones above a threshold that is equivalent to an alpha of 0.05 for a
-    # two-sided test (default). Then, cluster the selected bins by their
+    # two-sided paired-sample test (default). Then, cluster the selected bins by their
     # adjacency. That is, the bins should be continguous within a cluster.
     # Then, find the cluster mass, that is, sum the test statistic within 
     # each cluster. For getting a bootstrap null distribution, we will pick 
@@ -69,11 +71,11 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     # segments. Then, independently for each trial, we randomly permute (swap)
     # the baseline and post-stim segments to obtain the shuffled n-by-m time 
     # series. We will then find the cluster mass of the largest cluster in 
-    # this dataset. We will repeat this say 10,000 times and get a null 
+    # this dataset. We will repeat this say 2,000 times and get a null 
     # distribution for the cluster mass to find the p-value of the cluster
     # masses of the original dataset.
     
-    # Phew!        
+    # Phew!
     
     # Check inputs
     assert bin_cen_t.ndim==1,'bin_cen_t must be 1d numpy array'
@@ -85,30 +87,31 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     _,abs_clus_stat_sums,clus_start_ind,clus_end_ind = \
         get_cluster_mass_stats(bin_cen_t,r,stat_test)
     # Generate null distribution by random partitioning    
-    null_dist = []
-    for iBoot in range(nBoot):
-       sr = shuffle_time_series(r)
-       abs_largest_clus_mass,_,_,_ = get_cluster_mass_stats(bin_cen_t,r,stat_test)
-       null_dist.append(abs_largest_clus_mass)
-       print(iBoot)
-    # Find Monte-Carlo p-value of original data clusters
-    null_dist = np.array(null_dist)
-    nClus = len(abs_clus_stat_sums)
-    clus_p_val = []    
-    for clus_sum in abs_clus_stat_sums:
-        p = (np.argwhere(null_dist > clus_sum).shape[0])/nBoot
-        clus_p_val.append(p)
-    clus_p_val = np.array(clus_p_val)
+    null_dist = []    
+    n_cores = 8  
+    t1 = time.time()
+    print(f'Running bootstrapping in parallel with {n_cores} cores...')
+    null_dist = Parallel(n_jobs=n_cores)(delayed(run_bootstrap_once)\
+                            (bin_cen_t, r, stat_test) for _ in range(nBoot))
+    null_dist = np.array(null_dist)   
+    t2 = time.time()
+    print(f'Done. Time took : {np.round(t2-t1)} s')
+    clus_p_val = np.array([np.count_nonzero(null_dist > clus_sum) 
+                  for clus_sum in abs_clus_stat_sums])/nBoot    
     # Get the time indices of significant clusters
     alpha = 0.05/2 # two-sided test
-    sig_clus_ind = np.ravel(np.argwhere(clus_p_val < alpha))
+    sig_clus_ind = np.nonzero(clus_p_val < alpha)[0]
     sig_time_ind = []
     if not sig_clus_ind.size == 0:
-        for iClus in sig_clus_ind:
-            # print(clus_start_ind[iClus])
+        for iClus in sig_clus_ind:           
             time_ind = list(range(clus_start_ind[iClus],clus_end_ind[iClus]+1))
             sig_time_ind.append(time_ind)
     return np.ravel(np.array(sig_time_ind).astype(int))
+
+def run_bootstrap_once(bin_cen_t, r, stat_test):
+    sr = shuffle_time_series(r)
+    abs_largest_clus_mass = get_cluster_mass_stats(bin_cen_t, sr, stat_test)[0]
+    return abs_largest_clus_mass
 
 def shuffle_time_series(r):
     # We will swap the baseline and post-stim segments of each trial
@@ -145,26 +148,23 @@ def get_stats_for_timeseries(bin_cen_t,r,stat_test):
     """            
     n, m = r.shape
     alpha = 0.05 # alpha - Type-1 error threshold  
-    # Step 1: Find mean of baseline for each time series
-    baseline_means = np.ravel(np.zeros((1,n),dtype=float))
-
-    for i in range(n):
-        baseline_means[i] = np.mean(r[i,bin_cen_t<0])
+    # Step 1: Find mean of baseline for each time series    
+    baseline_means = [np.mean(x[bin_cen_t < 0]) for x in r]
+    
     # Step 2: Perform statistical test at each time point. If significant, find
     # out if positively or negatively modulated
-    statistic = np.ravel(np.zeros((1,m),dtype=float))# 1d numpy array of floats
-    pos_ind = np.ravel(np.zeros((1,m),dtype=bool)) # 1d numpy array of booleans
-    neg_ind = np.ravel(np.zeros((1,m),dtype=bool)) # 1d numpy array of booleans
+    statistic = np.zeros(m,dtype=float)# 1d numpy array of floats
+    pos_ind = np.zeros(m,dtype=bool) # 1d numpy array of booleans
+    neg_ind = np.zeros(m,dtype=bool) # 1d numpy array of booleans
     match stat_test:
         case 't': # t-test
             for iTime in range(m):               
                 tval,pvalue = sps.ttest_rel(r[:,iTime],baseline_means,
-                                            alternative='two-sided')
+                                            alternative='two-sided')                
                 statistic[iTime] = tval
                 if pvalue < alpha:
-                    # Because t-test is based on means, we could compare means
-                    # to decide on direction of modulation
-                    if (np.mean(r[:,iTime])-np.mean(baseline_means))>0:
+                    # Decide on direction of modulation
+                    if tval > 0:
                         pos_ind[iTime] = True
                     else:
                         neg_ind[iTime] = True
@@ -196,7 +196,8 @@ def get_stats_for_timeseries(bin_cen_t,r,stat_test):
         
         case _:
             raise ValueError("stat_test must be 't' or 'signed_rank'")
-    return np.array(statistic),pos_ind,neg_ind
+            
+    return np.array(statistic), pos_ind, neg_ind
 
 def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
     """
@@ -235,8 +236,7 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
     'Number of positive time bins (%u) must be equal number of negative time bins (%u)'\
         % (n_pos,n_neg)
     
-    # Step-1: Get the test statistic value for each time point
-    
+    # Step-1: Get the test statistic value for each time point    
     stats,pos_ind,neg_ind = get_stats_for_timeseries(bin_cen_t,r,stat_test) # output: 1d np array
     
     pos_starts,pos_ends = upy.find_repeats(pos_ind.astype(float), 1)
@@ -257,6 +257,6 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
             clus_stat_sums.append(np.sum(stats[s:(e+1)]))
         # Find cluster with largest absolute value of stat sum
         abs_clus_stat_sums = np.abs(clus_stat_sums)
-        max_ind = np.argmax(abs_clus_stat_sums)        
+        # max_ind = np.argmax(abs_clus_stat_sums)        
         stat_val_largest_clus = np.max(abs_clus_stat_sums)
     return stat_val_largest_clus,abs_clus_stat_sums,clus_start_ind,clus_end_ind
