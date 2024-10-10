@@ -15,8 +15,8 @@ import numpy as np
 import scipy.stats as sps
 import util_py as upy
 from copy import deepcopy
+import itertools
 import time
-import warnings
 from joblib import Parallel, delayed
 
 def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
@@ -96,7 +96,11 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
     null_dist = np.array(null_dist)   
     t2 = time.time()
     print(f'Done. Time took : {np.round(t2-t1)} s')
-    clus_p_val = np.array([np.count_nonzero(null_dist > clus_sum) 
+    # We have to use >= rather than > below because when the null distribution
+    # is all zeros and clus sum is also zero, using > will result in finding
+    # zero elements whereas >= will result in all elements of the null distribution
+    # being selected, which is the correct result.
+    clus_p_val = np.array([np.count_nonzero(null_dist >= clus_sum) 
                   for clus_sum in abs_clus_stat_sums])/nBoot    
     # Get the time indices of significant clusters
     alpha = 0.05/2 # two-sided test
@@ -106,7 +110,7 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
         for iClus in sig_clus_ind:           
             time_ind = list(range(clus_start_ind[iClus],clus_end_ind[iClus]+1))
             sig_time_ind.append(time_ind)
-    return np.ravel(np.array(sig_time_ind).astype(int))
+    return np.array(list(itertools.chain(*sig_time_ind))).astype(int)
 
 def run_bootstrap_once(bin_cen_t, r, stat_test):
     sr = shuffle_time_series(r)
@@ -119,8 +123,9 @@ def shuffle_time_series(r):
     mid = int(m/2)    
     # Go to each row, if swap is needed, split it in two and swap
     shuffled_r = deepcopy(r)# This step is a must
+    p = np.random.binomial(1,0.5,size=n).astype(bool)
     for i in range(n):
-        if np.random.binomial(1, 0.5)==1:
+        if p[i]:
             rt = deepcopy(shuffled_r[i,:]);
             shuffled_r[i,0:mid] = rt[mid:None]
             shuffled_r[i,mid:None] = rt[0:mid]
@@ -250,8 +255,8 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
     # may or may not be the cluster with largest number of members
     # Sum test-statistics within each cluster
     clus_stat_sums = []
-    stat_val_largest_clus = np.array([])
-    abs_clus_stat_sums = np.array([])
+    stat_val_largest_clus = 0
+    abs_clus_stat_sums = [0] # default is no difference between baseline and post-stim period
     if not clus_start_ind.size==0:
         for s,e in zip(clus_start_ind,clus_end_ind):           
             clus_stat_sums.append(np.sum(stats[s:(e+1)]))
@@ -259,4 +264,4 @@ def get_cluster_mass_stats(bin_cen_t,r,stat_test,**kwargs):
         abs_clus_stat_sums = np.abs(clus_stat_sums)
         # max_ind = np.argmax(abs_clus_stat_sums)        
         stat_val_largest_clus = np.max(abs_clus_stat_sums)
-    return stat_val_largest_clus,abs_clus_stat_sums,clus_start_ind,clus_end_ind
+    return stat_val_largest_clus, abs_clus_stat_sums, clus_start_ind, clus_end_ind
