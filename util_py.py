@@ -25,7 +25,7 @@ import pandas as pd
 #%% Module of common utility functions
 def mkdir(dir_name):
     if not (os.path.exists(dir_name)):
-        os.mkdirs(dir_name)
+        os.makedirs(dir_name,exist_ok=True)
 
 def colvec(one_dim_array):
     # Convert one dimentional numpy array to 2d column vector
