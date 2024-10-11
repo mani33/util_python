@@ -23,6 +23,10 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 
 #%% Module of common utility functions
+def mkdir(dir_name):
+    if not (os.path.exists(dir_name)):
+        os.mkdir(dir_name)
+
 def colvec(one_dim_array):
     # Convert one dimentional numpy array to 2d column vector
     return np.reshape(one_dim_array,(-1,1))
@@ -418,6 +422,7 @@ def format_figure(plt,**kwargs):
     params = {}
     params['linewidth'] = 0.5
     params['axes_linewidth'] = 0.5
+    params['xmargin'] = 0.00
     params['font_name'] = 'Arial'
     params['font_size'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
@@ -425,6 +430,7 @@ def format_figure(plt,**kwargs):
         if key in params.keys():
             params[key] = v
        
+    plt.rcParams['axes.xmargin'] = params['xmargin'] # get rid of extra spacing at the edges of x axis
     plt.rcParams['font.family'] = params['font_name']
     plt.rcParams['font.size'] = params['font_size']
     plt.rcParams['axes.edgecolor'] = params['nondata_col']
@@ -983,5 +989,69 @@ def make_segments(x, n, p, valid_last_seg=False):
         i += 1
     return np.array(Y).T
         
+def on_click(event):
+    # Function to go with make_subplots_selectable(fig)
+    if event.inaxes:
+        plt.sca(event.inaxes)
+
+def make_subplots_selectable(fig):
+    # Set figure so that if you click on a subplot, it will become the current
+    # axes, which you can then alter as you wish, such as changing xlim etc
+    fig.canvas.mpl_connect('button_press_event', on_click)
+    
+def jitter(x, noise_std=0.1):
+    # Add normally distributed noise to given data
+    x = np.array(x)
+    x = x + np.random.normal(0,noise_std,size=x.size)
+    return x
+   
+    
+def match_xlim_by_xlabel(fig1, fig2):
+    """ Match xlimits of subplots with the same xlabel in the given two figure
+    numbers.
+    Inputs:
+       Example: match_xlim_subplots(1,2)
+    """
+    plt.figure(fig1)
+    ax1 = plt.gcf().get_axes()
+    xlabels1 = [a.get_xlabel() for a in ax1]
+    
+    plt.figure(fig2)
+    ax2 = plt.gcf().get_axes()
+    xlabels2 = [a.get_xlabel() for a in ax2]
+    
+    _,iA,iB = intersect(xlabels1, xlabels2)
+    
+    # Find common xlim
+    for ia, ib in zip(iA,iB):
+        mm = ax1[ia].get_xlim() + ax2[ib].get_xlim()
+        com_lim = [np.min(mm), np.max(mm)]
+        ax1[ia].set_xlim(com_lim)
+        ax2[ib].set_xlim(com_lim)
+        
+def match_ylim_by_xlabel(fig1, fig2):
+    """ Match xlimits of subplots with the same xlabel in the given two figure
+    numbers.
+    Inputs:
+       Example: match_xlim_subplots(1,2)
+    """
+    plt.figure(fig1)
+    ax1 = plt.gcf().get_axes()
+    xlabels1 = [a.get_xlabel() for a in ax1]
+    
+    plt.figure(fig2)
+    ax2 = plt.gcf().get_axes()
+    xlabels2 = [a.get_xlabel() for a in ax2]
+    
+    _,iA,iB = intersect(xlabels1, xlabels2)
+    
+    # Find common xlim
+    for ia, ib in zip(iA,iB):
+        mm = ax1[ia].get_ylim() + ax2[ib].get_ylim()
+        com_lim = [np.min(mm), np.max(mm)]
+        ax1[ia].set_ylim(com_lim)
+        ax2[ib].set_ylim(com_lim)
+
+    
     
     
