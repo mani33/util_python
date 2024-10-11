@@ -141,8 +141,7 @@ def plot_corr_mat(r,feature_names,show_rval=False,abs_corr=False):
     ticks = np.arange(r.shape[0])
     ax = plt.gca()
     ax.set_yticks(ticks,labels=feature_names)
-    ax.set_xticks(ticks,labels=feature_names,rotation=90)
-                  # rotation_mode='anchor',ha='right')
+    ax.set_xticks(ticks,labels=feature_names,rotation=90)                 
     plt.tight_layout()
     return ax
         
