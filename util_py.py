@@ -25,7 +25,7 @@ import pandas as pd
 #%% Module of common utility functions
 def mkdir(dir_name):
     if not (os.path.exists(dir_name)):
-        os.mkdir(dir_name)
+        os.mkdirs(dir_name)
 
 def colvec(one_dim_array):
     # Convert one dimentional numpy array to 2d column vector
@@ -135,15 +135,15 @@ def plot_corr_mat(r,feature_names,show_rval=False,abs_corr=False):
     if abs_corr: 
         r = np.abs(r)
         vmin=0
-        cmap = 'winter'
+        cmap = 'inferno'
         
     plt.imshow(r,cmap=cmap,vmin=vmin,vmax=vmax)
     plt.colorbar()
     ticks = np.arange(r.shape[0])
     ax = plt.gca()
     ax.set_yticks(ticks,labels=feature_names)
-    ax.set_xticks(ticks,labels=feature_names,rotation=90,
-                  rotation_mode='anchor',ha='right')
+    ax.set_xticks(ticks,labels=feature_names,rotation=90)
+                  # rotation_mode='anchor',ha='right')
     plt.tight_layout()
     return ax
         
@@ -1051,7 +1051,3 @@ def match_ylim_by_xlabel(fig1, fig2):
         com_lim = [np.min(mm), np.max(mm)]
         ax1[ia].set_ylim(com_lim)
         ax2[ib].set_ylim(com_lim)
-
-    
-    
-    
