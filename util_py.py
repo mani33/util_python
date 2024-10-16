@@ -21,6 +21,7 @@ import os
 import pingouin as pg
 import scipy.cluster.hierarchy as sch
 import pandas as pd
+import pyperclip
 
 #%% Module of common utility functions
 def mkdir(dir_name):
@@ -50,7 +51,7 @@ def rmse(y,yh):
 def get_figure_position():
     # Returns a tuple of the pixel position (x,y,dx,dy) of the current figure
     x_y_dx_dy = plt.get_current_fig_manager().window.geometry().getRect()
-    
+    pyperclip.copy(x_y_dx_dy)
     return x_y_dx_dy
 
 def set_figure_position(rect):
