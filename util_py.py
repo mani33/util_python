@@ -24,6 +24,18 @@ import pandas as pd
 import pyperclip
 
 #%% Module of common utility functions
+def get_binary_comb(n_bits,reverse_strings=True):
+    # Get a list of strings of binary combinations
+    # Loop through all numbers from 0 to 2^n_bits - 1
+    bn = []
+    for i in range(1 << n_bits):
+        # Convert the current number to a binary string of length n
+        binary_str = format(i, '0' + str(n_bits) + 'b')
+        if reverse_strings:
+            binary_str = binary_str[::-1]
+        bn.append(binary_str)        
+    return bn
+
 def mkdir(dir_name):
     if not (os.path.exists(dir_name)):
         os.makedirs(dir_name,exist_ok=True)
