@@ -433,7 +433,7 @@ def format_figure(plt,**kwargs):
     params = {}
     params['linewidth'] = 0.5
     params['axes_linewidth'] = 0.5
-    params['xmargin'] = 0.00
+    params['xmargin'] = 0.05
     params['font_name'] = 'Arial'
     params['font_size'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
