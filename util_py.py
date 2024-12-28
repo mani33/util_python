@@ -24,6 +24,15 @@ import pandas as pd
 import pyperclip
 
 #%% Module of common utility functions
+
+            
+    
+    
+    
+    
+    
+    
+    
 def get_binary_comb(n_bits,reverse_strings=True):
     # Get a list of strings of binary combinations
     # Loop through all numbers from 0 to 2^n_bits - 1
@@ -1062,3 +1071,145 @@ def match_ylim_by_xlabel(fig1, fig2):
         com_lim = [np.min(mm), np.max(mm)]
         ax1[ia].set_ylim(com_lim)
         ax2[ib].set_ylim(com_lim)
+
+class Mfig():
+    def __init__(self,axes_wh, row_with_xlabels,
+                     col_with_y1_labels, row_with_titles=None, 
+                     col_with_y2_labels=None, col_with_twinx=None, 
+                     sup_xlabel=False, sup_ylabel=False, sup_title=False,
+                     inter_row_gap=0.1, inter_col_gap=0.1,
+                     fig_pad_top=0.2, fig_pad_bottom=0.2,
+                     fig_pad_left=0.2, fig_pad_right=0.2,
+                     xy_label_fontsize=9, xy_label_pad=0.1,                     
+                     tick_label_fontsize=9, 
+                     tick_len=0.1, tick_label_pad=0.1,
+                     title_fontsize=9,
+                     title_pad=0.1,
+                     axes_linewidth=1, # points
+                     sup_xy_label_fontsize=12,
+                     sup_title_fontsize=12,
+                     ytick_label_max_ndigits = 3,
+                     ytick_label_has_decimal_point=True,
+                     box_off=False,
+                     axis_off=False,
+                     dpi=300):
+        
+        
+        self.xy_label_fontsize = xy_label_fontsize
+        self.xy_label_pad = xy_label_pad * 72 # convert inches to points
+        self.xy_label_fontsize = xy_label_fontsize
+        self.tick_label_fontsize = tick_label_fontsize
+        self.title_fontsize = title_fontsize
+        self.title_pad = title_pad * 72 # convert inches to points
+        
+        
+        # Determine figure width
+        n_row = len(list(row_with_xlabels))
+        n_col = len(list(col_with_y1_labels))
+        pt2in = 1/72 # points to inches conversion factor
+        if col_with_y1_labels is None:
+            col_with_y1_labels = np.zeros(n_col)
+        if col_with_y2_labels is None:
+            col_with_y2_labels = np.zeros(n_col)
+        if row_with_titles is None:
+            row_with_titles = np.zeros(n_row)
+        # First calculate width inches
+        x_tick_group_len = (tick_label_fontsize * pt2in) + tick_label_pad + tick_len
+        ytick_label_width = (ytick_label_max_ndigits + \
+                    ytick_label_has_decimal_point) * (0.5 * tick_label_fontsize)
+        y_tick_group_len = (ytick_label_width * pt2in) + tick_label_pad + tick_len
+        n_ylabels = np.sum(col_with_y1_labels) + np.sum(col_with_y2_labels)
+       
+        tot_axes_w = n_col * axes_wh[0]
+        tot_axes_h = n_row * axes_wh[1]
+        n_y2_labels = np.sum(col_with_y2_labels)
+        tot_tick_grp_w = (n_col + n_y2_labels) * y_tick_group_len
+        tot_tick_grp_h = n_row * x_tick_group_len
+        tot_inter_col_gap_w = (n_col-1) * inter_col_gap
+        tot_inter_row_gap_h = (n_row-1) * inter_row_gap
+        tot_fig_pad_w = fig_pad_left + fig_pad_right
+        tot_fig_pad_h = fig_pad_top + fig_pad_bottom
+        xy_label_grp_len = ((xy_label_fontsize * pt2in) + xy_label_pad)
+        tot_ylab_w = n_ylabels * xy_label_grp_len
+        tot_xlab_h = np.sum(row_with_xlabels) * xy_label_grp_len
+        one_title_len = (title_fontsize * pt2in) + title_pad
+        tot_title_h = np.sum(row_with_titles) * one_title_len
+        fig_w = tot_fig_pad_w + tot_ylab_w + tot_tick_grp_w + tot_axes_w + \
+                                                        tot_inter_col_gap_w
+        fig_h = tot_fig_pad_h + tot_xlab_h + tot_tick_grp_h + tot_axes_h + \
+                        tot_inter_row_gap_h + tot_title_h
+        
+        fig = plt.figure(figsize=(fig_w, fig_h),dpi=dpi)
+        # format_figure(plt, fontsize=tick_label_fontsize)
+        offset_b = fig_pad_bottom
+        self.axes = []
+        for r in range(n_row-1,-1,-1):
+            rax = []
+            offset_l = fig_pad_left
+            for c in range(n_col):
+                left = offset_l + (col_with_y1_labels[c] * xy_label_grp_len) \
+                                                            + y_tick_group_len
+                                                                    
+                bottom = x_tick_group_len + (row_with_xlabels[r] * xy_label_grp_len) \
+                                                                        + offset_b
+                rect = np.array([left, bottom, axes_wh[0], axes_wh[1]])/\
+                        np.array([fig_w, fig_h, fig_w, fig_h])
+                
+                offset_l = left + axes_wh[0] + (col_with_y2_labels[c] * \
+                                            (y_tick_group_len + xy_label_grp_len)) + \
+                                            inter_col_gap
+                ax = fig.add_axes(rect)
+                ax.tick_params(axis='both', which='major', direction='out', 
+                               length=tick_len*72, width=axes_linewidth, color='k', 
+                               pad=tick_label_pad*72, 
+                               labelsize=tick_label_fontsize, 
+                               labelcolor='k')
+                ax.spines['top'].set_linewidth(axes_linewidth)
+                ax.spines['right'].set_linewidth(axes_linewidth)
+                ax.spines['bottom'].set_linewidth(axes_linewidth)
+                ax.spines['left'].set_linewidth(axes_linewidth)
+                if box_off:
+                    box_off(ax)
+                if axis_off:
+                    ax.axis('off')
+                rax.append(ax)
+            self.axes.append(rax)
+            offset_b = bottom + axes_wh[1] + (row_with_titles[r] * one_title_len) + \
+                                        inter_row_gap
+
+        self.axes = self.axes[::-1]
+        self.curr_axes = None
+    
+    def activate_axes(self,r,c):
+        self.curr_axes = self.axes[r][c] 
+    def plot(self, x, y, **kwargs):
+        self.curr_axes.plot(x, y, **kwargs)
+    def add_patch(self, *kwargs):
+        self.curr_axes.add_patch(*kwargs)
+    def imshow(self,im, **kwargs):
+        self.curr_axes.imshow(im, **kwargs)
+    def xlabel(self,label_str, **kwargs):
+        self.curr_axes.set_xlabel(label_str, labelpad=self.xy_label_pad,
+                                  fontsize=self.xy_label_fontsize, **kwargs)
+    def ylabel(self,label_str, **kwargs):
+        self.curr_axes.set_ylabel(label_str, labelpad=self.xy_label_pad,
+                                  fontsize=self.xy_label_fontsize, **kwargs)
+    def axis_on(self):
+        self.curr_axes.axis('on')
+    def axis_off(self):
+        self.curr_axes.axis('off')
+    def text(self,x,y,text_str, **kwargs):
+        self.curr_axes.text(x, y, text_str, **kwargs)
+    def title(self, tit_str, **kwargs):
+        self.curr_axes.set_title(tit_str, pad=self.title_pad, 
+                                 fontsize=self.title_fontsize, **kwargs)
+        
+ #%%       
+if __name__ == '__main__':
+    plt.close('all')
+    row_with_xlabels = [0, 0, 0]
+    col_with_y1_labels = [0, 0, 0]
+    mf = Mfig([2,2],row_with_xlabels ,col_with_y1_labels,[0,0,0],
+                     col_with_y2_labels=[0,0,0],axis_off=True,
+                     inter_col_gap=0.125)
+    # mf.plot()
