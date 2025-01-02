@@ -22,17 +22,9 @@ import pingouin as pg
 import scipy.cluster.hierarchy as sch
 import pandas as pd
 import pyperclip
+from screeninfo import get_monitors
 
-#%% Module of common utility functions
-
-            
-    
-    
-    
-    
-    
-    
-    
+#%% Module of common utility functions     
 def get_binary_comb(n_bits,reverse_strings=True):
     # Get a list of strings of binary combinations
     # Loop through all numbers from 0 to 2^n_bits - 1
@@ -1082,7 +1074,7 @@ class Mfig():
                      fig_pad_left=0.2, fig_pad_right=0.2,
                      xy_label_fontsize=9, xy_label_pad=0.1,                     
                      tick_label_fontsize=9, 
-                     tick_len=0.1, tick_label_pad=0.1,
+                     tick_len=0.05, tick_label_pad=0.1,
                      title_fontsize=9,
                      title_pad=0.1,
                      axes_linewidth=1, # points
@@ -1138,9 +1130,23 @@ class Mfig():
                                                         tot_inter_col_gap_w
         fig_h = tot_fig_pad_h + tot_xlab_h + tot_tick_grp_h + tot_axes_h + \
                         tot_inter_row_gap_h + tot_title_h
-        
-        fig = plt.figure(figsize=(fig_w, fig_h),dpi=dpi)
-        # format_figure(plt, fontsize=tick_label_fontsize)
+        # Check monitor resolution
+        self.fig = plt.figure(figsize=(fig_w, fig_h),dpi=dpi)
+        mon = get_monitors()
+        pm = [y for y in mon if y.is_primary][0]
+        mw, mh = pm.width, pm.height
+        menu_height = self.fig.canvas.toolbar.size().height() # pixels
+        non_plottable_pix_h = menu_height * 2 # approximation        
+        max_good_dpi_y = np.floor((mh - non_plottable_pix_h)/fig_h)
+        max_good_dpi_x = np.floor(mw/fig_w)
+        assert dpi <= max_good_dpi_x, f'The given dpi of {dpi} exceeds the '\
+                                     f'possible dpi of {max_good_dpi_x}. '\
+                                     f'Set dpi <= {max_good_dpi_x} to get '\
+                                     'desired axes width'
+        assert dpi <= max_good_dpi_y, f'The given dpi of {dpi} exceeds the '\
+                                     f'possible dpi of {max_good_dpi_y}. '\
+                                     f'Set dpi <= {max_good_dpi_y} to get '\
+                                     'desired axes height'        
         offset_b = fig_pad_bottom
         self.axes = []
         for r in range(n_row-1,-1,-1):
@@ -1158,7 +1164,7 @@ class Mfig():
                 offset_l = left + axes_wh[0] + (col_with_y2_labels[c] * \
                                             (y_tick_group_len + xy_label_grp_len)) + \
                                             inter_col_gap
-                ax = fig.add_axes(rect)
+                ax = self.fig.add_axes(rect)
                 ax.tick_params(axis='both', which='major', direction='out', 
                                length=tick_len*72, width=axes_linewidth, color='k', 
                                pad=tick_label_pad*72, 
@@ -1207,9 +1213,12 @@ class Mfig():
  #%%       
 if __name__ == '__main__':
     plt.close('all')
-    row_with_xlabels = [0, 0, 0]
-    col_with_y1_labels = [0, 0, 0]
-    mf = Mfig([2,2],row_with_xlabels ,col_with_y1_labels,[0,0,0],
-                     col_with_y2_labels=[0,0,0],axis_off=True,
-                     inter_col_gap=0.125)
-    # mf.plot()
+    row_with_xlabels = [0, 1, 1, 1]
+    col_with_y1_labels = [0, 0]
+    mf = Mfig([1.3,5], row_with_xlabels, col_with_y1_labels,
+                     axis_off=False,  inter_col_gap=0.125, 
+                     axes_linewidth=0.5, tick_label_fontsize=9, dpi=45)
+    plt.savefig(r"C:\Users\maniv\Downloads\Figure_1.svg")
+    f = plt.gcf()
+    print(f.get_size_inches()*f.dpi)
+    print('gabuka')
