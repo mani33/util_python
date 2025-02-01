@@ -23,8 +23,67 @@ import scipy.cluster.hierarchy as sch
 import pandas as pd
 import pyperclip
 from screeninfo import get_monitors
+import PyPDF2
+from reportlab.pdfgen import canvas
+from PyPDF4.pdf import PdfFileReader, PdfFileWriter
+from reportlab.lib.units import mm
+#%% Module of common utility functions
+def shuffle_save_pdf_pages(pdf_path, output_file_name):
+    """Reads a PDF file and saves each page as a separate PDF."""
+    with open(pdf_path, 'rb') as pdf_file:
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        num_pages = len(pdf_reader.pages)
+        pdf_writer = PyPDF2.PdfWriter()
+        np.random.seed(1)
+        page_order = np.random.randint(0,num_pages,num_pages)
+        for page_num in page_order:
+            pdf_writer.add_page(pdf_reader.pages[int(page_num)])       
+        with open(output_file_name, 'wb') as output_file:
+            pdf_writer.write(output_file)
+            
+def create_page_pdf(num, tmp, paper_type='letter'):
+    c = canvas.Canvas(tmp)
+    for i in range(1, num + 1):
+        # c.drawString((210 // 2) * mm, (4) * mm, str(i)) # Bottom
+        if paper_type == 'letter':        
+            c.drawString(3 * mm, (279-6) * mm, str(i)) # Letter paper size
+        elif paper_type == 'legal':
+            c.drawString(3 * mm, (356-6) * mm, str(i)) # Legal paper size
+        c.showPage()
+    c.save()
 
-#%% Module of common utility functions     
+def add_page_numbers(pdf_path, paper_type='letter'):
+    """
+    Add page numbers to a pdf, save the result as a new pdf
+    @param pdf_path: path to pdf
+    """
+    tmp = "__tmp.pdf"
+
+    writer = PdfFileWriter()
+    with open(pdf_path, "rb") as f:
+        reader = PdfFileReader(f, strict=False)
+        n = reader.getNumPages()
+
+        # create new PDF with page numbers
+        create_page_pdf(n, tmp, paper_type=paper_type)
+
+        with open(tmp, "rb") as ftmp:
+            number_pdf = PdfFileReader(ftmp)
+            # iterarte pages
+            for p in range(n):
+                page = reader.getPage(p)
+                numberLayer = number_pdf.getPage(p)
+                # merge number page with actual page
+                page.mergePage(numberLayer)
+                writer.addPage(page)
+
+            # write result
+            if writer.getNumPages():
+                newpath = pdf_path[:-4] + "_numbered.pdf"
+                with open(newpath, "wb") as f:
+                    writer.write(f)
+        os.remove(tmp)
+     
 def get_binary_comb(n_bits,reverse_strings=True):
     # Get a list of strings of binary combinations
     # Loop through all numbers from 0 to 2^n_bits - 1
