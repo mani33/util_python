@@ -256,15 +256,13 @@ def get_gausswin(sigma,bin_width):
     return gw
 
 def get_pickled_data(data_filename):
-    fh = open(data_filename,'rb')
-    mdata = pkl.load(fh)
-    fh.close()
+    with open(data_filename,'rb') as fh:
+        mdata = pkl.load(fh)
     return mdata
 
 def pickle_data(mdata,save_filename):
-    fh = open(save_filename,'wb')
-    pkl.dump(mdata,fh)
-    fh.close()
+    with open(save_filename,'wb') as fh:
+        pkl.dump(mdata,fh)      
     
 def std_robust(x):
     # Robust standard deviation
