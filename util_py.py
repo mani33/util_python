@@ -90,11 +90,11 @@ def format_pstr(p):
     return ps
 
 
-def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
+def scatter_equal(v1, v2, s=4, c='k', xy_lim=None, title=None, ax=None, facecolors='none'):
     v1,v2 = np.ravel(np.array(v1)),np.ravel(np.array(v2))
     if ax == None:
         ax = plt.gca()    
-    ax.scatter(v1,v2,s=4,c=c,zorder=1)    
+    ax.scatter(v1, v2, s=s, zorder=1, facecolors=facecolors, edgecolors=c)    
     pv = np.hstack((v1,v2))
     if xy_lim==None:
         m,ma = np.min(pv),np.max(pv)
@@ -108,7 +108,8 @@ def scatter_equal(v1,v2,xy_lim=None,title=None,c='k',ax=None):
     ax.set_xlim((m,ma))
     ax.set_ylim((m,ma))
     ax.plot([m,ma],[m,ma],color='r',zorder=2)
-
+    
+    return ax
 
 def cluster_corr(corr_array, inplace=False):
     """
@@ -436,6 +437,7 @@ def format_figure(plt,**kwargs):
     params['font_name'] = 'Arial'
     params['font_size'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
+    params['labelpad'] = 12
     for key,v in kwargs.items():
         if key in params.keys():
             params[key] = v
@@ -458,6 +460,7 @@ def format_figure(plt,**kwargs):
     plt.rcParams['xtick.minor.width'] = params['axes_linewidth']
     plt.rcParams['ytick.major.width'] = params['axes_linewidth']
     plt.rcParams['ytick.minor.width'] = params['axes_linewidth']
+    plt.rcParams['axes.labelpad'] = params['labelpad']
     
 def make_axes(plt,wh,dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
@@ -1185,7 +1188,9 @@ class Mfig():
         self.curr_axes = None
     
     def activate_axes(self,r,c):
-        self.curr_axes = self.axes[r][c] 
+        self.curr_axes = self.axes[r][c]
+        return self.curr_axes
+    
     def plot(self, x, y, **kwargs):
         self.curr_axes.plot(x, y, **kwargs)
     def add_patch(self, *kwargs):
