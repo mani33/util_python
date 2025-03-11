@@ -27,7 +27,7 @@ import PyPDF2
 from reportlab.pdfgen import canvas
 from PyPDF4.pdf import PdfFileReader, PdfFileWriter
 from reportlab.lib.units import mm
-#%% Module of common utility functions
+#%% Functions
 def shuffle_save_pdf_pages(pdf_path, output_file_name):
     """Reads a PDF file and saves each page as a separate PDF."""
     with open(pdf_path, 'rb') as pdf_file:
@@ -1272,15 +1272,3 @@ class Mfig():
         self.curr_axes.set_title(tit_str, pad=self.title_pad, 
                                  fontsize=self.title_fontsize, **kwargs)
         
- #%%       
-if __name__ == '__main__':
-    plt.close('all')
-    row_with_xlabels = [0, 1, 1, 1]
-    col_with_y1_labels = [0, 0]
-    mf = Mfig([1.3,5], row_with_xlabels, col_with_y1_labels,
-                     axis_off=False,  inter_col_gap=0.125, 
-                     axes_linewidth=0.5, tick_label_fontsize=9, dpi=45)
-    plt.savefig(r"C:\Users\maniv\Downloads\Figure_1.svg")
-    f = plt.gcf()
-    print(f.get_size_inches()*f.dpi)
-    print('gabuka')
