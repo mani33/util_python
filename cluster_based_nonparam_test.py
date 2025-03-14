@@ -38,7 +38,13 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
                   nBoot (nBoot=10000, default)
     Outputs:
       sig_time_ind - 1d numpy array of bin_cen_t-indices of clusters that are 
-      significantly modulated
+              significantly modulated. Size of this array = sum of sizes of 
+              significantly modulated clusters
+      clus_p_val - 1d array of p-values of significantly modulated clusters. Note
+              that the size of this array will not generally match that of 
+              sig_time_ind since each cluster could contain more than one
+              data point.
+                  
     """                  
     # Logic of the test:
     # Each row in r is a single trial time series or a time series that was
@@ -110,7 +116,7 @@ def cluster_mass_test(bin_cen_t,r,stat_test,nBoot=2000,**kwargs):
         for iClus in sig_clus_ind:           
             time_ind = list(range(clus_start_ind[iClus],clus_end_ind[iClus]+1))
             sig_time_ind.append(time_ind)
-    return np.array(list(itertools.chain(*sig_time_ind))).astype(int)
+    return np.array(list(itertools.chain(*sig_time_ind))).astype(int), clus_p_val[sig_clus_ind]
 
 def run_bootstrap_once(bin_cen_t, r, stat_test):
     sr = shuffle_time_series(r)

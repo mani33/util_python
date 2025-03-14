@@ -36,6 +36,15 @@ def shuffle_save_pdf_pages(pdf_path, output_file_name):
         pdf_writer = PyPDF2.PdfWriter()
         np.random.seed(1)
         page_order = np.random.randint(0,num_pages,num_pages)
+        # Math
+        # breakpoint()
+        # ndone = 100 # Math
+        ndone = 57 # English
+        pages_done = page_order[:ndone]
+        page_order = list(set(np.arange(num_pages)) - set(pages_done))
+        # Shuffle left over pages
+        np.random.shuffle(page_order)
+        
         for page_num in page_order:
             pdf_writer.add_page(pdf_reader.pages[int(page_num)])       
         with open(output_file_name, 'wb') as output_file:
@@ -46,7 +55,7 @@ def create_page_pdf(num, tmp, paper_type='letter'):
     for i in range(1, num + 1):
         # c.drawString((210 // 2) * mm, (4) * mm, str(i)) # Bottom
         if paper_type == 'letter':        
-            c.drawString(3 * mm, (279-6) * mm, str(i)) # Letter paper size
+            c.drawString(6 * mm, (279-12) * mm, str(i)) # Letter paper size
         elif paper_type == 'legal':
             c.drawString(3 * mm, (356-6) * mm, str(i)) # Legal paper size
         c.showPage()
