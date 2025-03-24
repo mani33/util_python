@@ -28,6 +28,35 @@ from reportlab.pdfgen import canvas
 from PyPDF4.pdf import PdfFileReader, PdfFileWriter
 from reportlab.lib.units import mm
 #%% Functions
+def bin_by_time(x_v, x_t, bin_cen_t):
+    """ Bin a given 2d array of time series data x_v (n, x_t.size) using the
+    bin centers vector bin_cen_t. x_t is the time vector corresponding to the
+    raw unbinned data x_v
+    Inputs:
+        x_v - 2d numpy array of size (p, nT)
+        x_t - 1d numpy array of time (nT, )
+        bin_cen_t - 1d numpy array of bin center times (mT,); assumed to be 
+                    uniformly spaced
+    Outputs:
+        b_v - 2d numpy array of binned data (p, mT)
+    
+    Mani Subramaniyan 2025-03-23    
+    """
+    # Get bin width from the given bin_cen_t
+    bw = np.diff(bin_cen_t[0:2])
+    # Get start and end times of bins
+    bin_s, bin_e = bin_cen_t - bw/2, bin_cen_t + bw/2
+    # Get a boolean array telling us which data elements belong to each bin
+    bin_bools = [(x_t >= s) & (x_t < e) for s, e in zip(bin_s, bin_e)]
+    # Get number of data points in each bin
+    n_per_bin = np.sum(bin_bools[0]) 
+    # For quick selection of data points falling in each bin, use matrix multiplication
+    bin_selector = np.array(bin_bools, dtype=float).T # (nT, mT)
+    bin_sums = np.matmul(x_v, bin_selector) # (p, nT) x (nT, mT) = (p, mT)
+    b_v = bin_sums/n_per_bin
+    
+    return b_v
+
 def shuffle_save_pdf_pages(pdf_path, output_file_name):
     """Reads a PDF file and saves each page as a separate PDF."""
     with open(pdf_path, 'rb') as pdf_file:
