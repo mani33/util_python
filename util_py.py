@@ -145,7 +145,10 @@ def rsquared_lmm(mod):
     # Compute R2 as suggested by Nakagawa & Schielzeth (2012)
     # Input mod is a fitted linear mixed model
     var_resid = mod.scale
-    var_re = float(mod.cov_re.iloc[0])
+    # sum the diagonal elements of the mod.cov_re, which correspond to the
+    # variances of the random effects. We ignore covariances (the off-diagonal
+    # elements)
+    var_re = np.diag(mod.cov_re.values).sum() 
     var_fe = mod.predict().var()
     tot_var = var_resid + var_re + var_fe
     r2m = var_fe/tot_var # marginal
