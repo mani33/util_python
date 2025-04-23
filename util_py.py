@@ -28,6 +28,26 @@ from reportlab.pdfgen import canvas
 from PyPDF4.pdf import PdfFileReader, PdfFileWriter
 from reportlab.lib.units import mm
 #%% Functions
+def zscore(x):
+    z = (np.array(x)-np.mean(x))/np.std(x)
+    
+    return z
+
+def plot_cdf(data, col='k', axes=None):
+    """ Compute cumulative distribution function
+        Input:
+            data - list or 1d numpy array
+        
+    """    
+    # Sort the data
+    data_sorted = np.sort(data)    
+    # Compute cumulative probabilities
+    cdf = np.arange(1, len(data_sorted)+1) / len(data_sorted)
+    if axes is None:
+        axes = plt.gca()
+    axes.plot(data_sorted, cdf, color=col)
+    
+
 def bin_by_time(x_v, x_t, bin_cen_t):
     """ Bin a given 2d array of time series data x_v (n, x_t.size) using the
     bin centers vector bin_cen_t. x_t is the time vector corresponding to the
