@@ -562,7 +562,7 @@ def format_figure(plt,**kwargs):
     plt.rcParams['ytick.minor.width'] = params['axes_linewidth']
     plt.rcParams['axes.labelpad'] = params['labelpad']
     
-def make_axes(plt,wh,dpi=300):
+def make_axes(plt, wh, dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
     # Add space for x and y ticks and labels
     # Note: axis width and height only includes the box of plotting area, 
