@@ -33,19 +33,25 @@ def zscore(x):
     
     return z
 
-def plot_cdf(data, col='k', axes=None):
+def get_cdf(data, zscored=True, cdf_x=None):
     """ Compute cumulative distribution function
         Input:
             data - list or 1d numpy array
-        
+            n - number of cdf values to be computed between the min and max
+                of the data
+        Output:
+            cdf - cdf values; 1d numpy array of size n
     """    
     # Sort the data
-    data_sorted = np.sort(data)    
-    # Compute cumulative probabilities
-    cdf = np.arange(1, len(data_sorted)+1) / len(data_sorted)
-    if axes is None:
-        axes = plt.gca()
-    axes.plot(data_sorted, cdf, color=col)
+    data = np.sort(data)
+    if zscored:
+        data = (data-np.mean(data))/np.std(data)
+    if cdf_x is None:
+        cdf_x = np.unique(data)
+        
+    cdf = np.searchsorted(data, cdf_x, side='right')/data.size
+    
+    return cdf, cdf_x
     
 
 def bin_by_time(x_v, x_t, bin_cen_t):
@@ -184,7 +190,7 @@ def rmse(y,yh):
 def get_figure_position():
     # Returns a tuple of the pixel position (x,y,dx,dy) of the current figure
     x_y_dx_dy = plt.get_current_fig_manager().window.geometry().getRect()
-    pyperclip.copy(x_y_dx_dy)
+    pyperclip.copy(f'utpy.set_figure_position({x_y_dx_dy})')
     return x_y_dx_dy
 
 def set_figure_position(rect):
@@ -555,7 +561,7 @@ def format_figure(plt,**kwargs):
     params['axes_linewidth'] = 0.5
     params['xmargin'] = 0.01
     params['font_name'] = 'Arial'
-    params['font_size'] = 9
+    params['fontsize'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
     params['labelpad'] = 12
     for key,v in kwargs.items():
@@ -564,7 +570,7 @@ def format_figure(plt,**kwargs):
        
     plt.rcParams['axes.xmargin'] = params['xmargin'] # get rid of extra spacing at the edges of x axis
     plt.rcParams['font.family'] = params['font_name']
-    plt.rcParams['font.size'] = params['font_size']
+    plt.rcParams['font.size'] = params['fontsize']
     plt.rcParams['axes.edgecolor'] = params['nondata_col']
     plt.rcParams['xtick.color'] = params['nondata_col']
     plt.rcParams['xtick.labelcolor'] = params['nondata_col']
@@ -573,7 +579,7 @@ def format_figure(plt,**kwargs):
     plt.rcParams['text.color'] = params['nondata_col']
     plt.rcParams['axes.labelcolor'] = params['nondata_col']
     plt.rcParams['legend.labelcolor'] = params['nondata_col']
-    plt.rcParams['legend.fontsize'] = params['font_size']
+    plt.rcParams['legend.fontsize'] = params['fontsize']
     plt.rcParams['lines.linewidth'] = params['linewidth']
     plt.rcParams['axes.linewidth'] = params['axes_linewidth']
     plt.rcParams['xtick.major.width'] = params['axes_linewidth']
