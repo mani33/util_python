@@ -27,7 +27,21 @@ import PyPDF2
 from reportlab.pdfgen import canvas
 from PyPDF4.pdf import PdfFileReader, PdfFileWriter
 from reportlab.lib.units import mm
+from datetime import datetime
+import pytz
 #%% Functions
+def posix_to_local_timestamp(posix_ts, time_zone_str, time_format):
+    """ Convert POSIX time (at London clock) to the time running in a local clock
+    at the given time zone.
+    '2023-10-21 21:00:00' = posix_to_local_timestamp(1697947200, 'US/Arizona','%Y-%m-%d %H:%M:%S')
+    """
+    # Step 1: Convert posix to a naive datetime object in UTC
+    utc_datetime = datetime.fromtimestamp(posix_ts, tz=pytz.utc)
+    target_timezone = pytz.timezone(time_zone_str)
+    target_datetime = utc_datetime.astimezone(target_timezone)
+    
+    return target_datetime.strftime(time_format)
+    
 def zscore(x):
     z = (np.array(x)-np.mean(x))/np.std(x)
     
@@ -557,27 +571,32 @@ def create_psth_bins(pre,post,bin_width,n_decimals=5):
 
 def format_figure(plt,**kwargs):
     params = {}
-    params['linewidth'] = 0.5
-    params['axes_linewidth'] = 0.5
+    params['linewidth'] = 1
+    params['axes_linewidth'] = 1
     params['xmargin'] = 0.01
-    params['font_name'] = 'Arial'
+    params['fontname'] = 'Arial'
     params['fontsize'] = 9
     params['nondata_col'] = [0.15,0.15,0.15]
     params['labelpad'] = 12
+    params['axes_col'] = [0.15,0.15,0.15]
+    params['xy_label_col'] = [0.15,0.15,0.15]
+    params['fig_facecol'] = [1,1,1]
+    params['axes_facecol'] = [1,1,1]
+    params['text_col'] = [0,0,0]
     for key,v in kwargs.items():
         if key in params.keys():
             params[key] = v
        
     plt.rcParams['axes.xmargin'] = params['xmargin'] # get rid of extra spacing at the edges of x axis
-    plt.rcParams['font.family'] = params['font_name']
+    plt.rcParams['font.family'] = params['fontname']
     plt.rcParams['font.size'] = params['fontsize']
-    plt.rcParams['axes.edgecolor'] = params['nondata_col']
-    plt.rcParams['xtick.color'] = params['nondata_col']
-    plt.rcParams['xtick.labelcolor'] = params['nondata_col']
-    plt.rcParams['ytick.color'] = params['nondata_col']
-    plt.rcParams['ytick.labelcolor'] = params['nondata_col']
-    plt.rcParams['text.color'] = params['nondata_col']
-    plt.rcParams['axes.labelcolor'] = params['nondata_col']
+    plt.rcParams['axes.edgecolor'] = params['axes_col']
+    plt.rcParams['xtick.color'] = params['axes_col']
+    plt.rcParams['xtick.labelcolor'] = params['axes_col']
+    plt.rcParams['ytick.color'] = params['axes_col']
+    plt.rcParams['ytick.labelcolor'] = params['axes_col']
+    plt.rcParams['text.color'] = params['text_col']
+    plt.rcParams['axes.labelcolor'] = params['xy_label_col']
     plt.rcParams['legend.labelcolor'] = params['nondata_col']
     plt.rcParams['legend.fontsize'] = params['fontsize']
     plt.rcParams['lines.linewidth'] = params['linewidth']
@@ -587,6 +606,8 @@ def format_figure(plt,**kwargs):
     plt.rcParams['ytick.major.width'] = params['axes_linewidth']
     plt.rcParams['ytick.minor.width'] = params['axes_linewidth']
     plt.rcParams['axes.labelpad'] = params['labelpad']
+    plt.rcParams['figure.facecolor'] = params['fig_facecol']
+    plt.rcParams['axes.facecolor'] = params['axes_facecol']
     
 def make_axes(plt, wh, dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
