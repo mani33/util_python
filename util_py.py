@@ -30,7 +30,21 @@ from reportlab.lib.units import mm
 from datetime import datetime
 import pytz
 #%% Functions
-def posix_to_local_timestamp(posix_ts, time_zone_str, time_format):
+def concordance_corrcoef(x, y):
+    """ Compute concordance correlation coefficient as defined in 	
+    Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
+    Biometrics. 1989;45(1):255-268.
+    """
+    x, y = np.array(x), np.array(y)
+    assert x.ndim==y.ndim==1, 'Must provide 1d arrays of x and y'
+    cv = np.cov(np.array((x,y)))
+    vx, vy, sxy = cv[0,0], cv[-1,-1], cv[0,1]
+    m1, m2 = np.mean(x), np.mean(y)
+    ccc = 2*sxy/(vx + vy + (m1-m2)**2)
+    return ccc
+    
+def posix_to_local_timestamp(posix_ts, time_zone_str='US/Arizona', 
+                             time_format='%Y-%m-%d %H:%M:%S'):
     """ Convert POSIX time (at London clock) to the time running in a local clock
     at the given time zone.
     '2023-10-21 21:00:00' = posix_to_local_timestamp(1697947200, 'US/Arizona','%Y-%m-%d %H:%M:%S')
@@ -608,6 +622,7 @@ def format_figure(plt,**kwargs):
     plt.rcParams['axes.labelpad'] = params['labelpad']
     plt.rcParams['figure.facecolor'] = params['fig_facecol']
     plt.rcParams['axes.facecolor'] = params['axes_facecol']
+    plt.rcParams['axes.labelpad'] = params['labelpad']
     
 def make_axes(plt, wh, dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
@@ -1002,12 +1017,12 @@ def set_common_subplot_params(plt):
     Ouputs:
         None
     """
-    legend_label_size = 14
-    title_size = 14
-    x_y_tick_label_size = 14
+    legend_label_size = 16
+    title_size = 16
+    x_y_tick_label_size = 16
     tick_len = 3
     line_width= 1
-    fontname = 'Arial'
+    fontname = 'Times New Roman'
     params = {
         'font.family': 'sans-serif',
         'font.sans-serif': [fontname],
