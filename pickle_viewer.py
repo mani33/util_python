@@ -15,7 +15,8 @@ class PickleFigureLoader:
     def __init__(self, root):
         self.root = root
         self.root.title("Pickle Figure Loader")
-        self.current_directory = os.getcwd()
+        # self.current_directory = os.getcwd()
+        self.current_directory = r'R:\active\sleep\work\PVT_Substitution_Transformer\Arizona\preprocessed_landmarks\plots'
 
         # Label to show current directory
         self.dir_label = Label(root, text=f"Current Folder: {self.current_directory}", wraplength=500, anchor='w', justify='left')
