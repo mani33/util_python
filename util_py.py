@@ -30,6 +30,23 @@ from reportlab.lib.units import mm
 from datetime import datetime
 import pytz
 #%% Functions
+
+def format_axes(ax, axes_face_col='w', axes_line_col='gray', axes_line_width=0.5,
+                label_col='k', xlabel_angle=0, xtick_dir='out'):
+    # Set face color
+    ax.set_facecolor(axes_face_col)
+    # Set color of all spines to red
+    for spine in ax.spines.values():
+        spine.set_color(axes_line_col)
+        spine.set_linewidth(axes_line_width)
+    # Format the ticks and tick labels
+    ax.tick_params(axis='both', length=2 , color=axes_line_col,
+                   width=axes_line_width, labelcolor=label_col)
+    ax.tick_params(axis='x',direction=xtick_dir, labelrotation=xlabel_angle)
+    ax.tick_params(axis='y',direction='out')
+    
+    return ax
+
 def concordance_corrcoef(x, y):
     """ Compute concordance correlation coefficient as defined in 	
     Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
@@ -207,7 +224,7 @@ def rsquared_lmm(mod):
     tot_var = var_resid + var_re + var_fe
     r2m = var_fe/tot_var # marginal
     r2c = (var_fe+var_re)/tot_var # conditional
-    r2 = dict(marginal=r2m,conditional=r2c)
+    r2 = dict(marginal=r2m,conditional=r2c, var_re=var_re, var_fe=var_fe, var_resid=var_resid)
     
     return r2
 
@@ -1040,18 +1057,18 @@ def set_common_subplot_params(plt):
         }
     plt.rcParams.update(params)
                 
-def roc_auc_ci(auc,n_true_pos,n_true_neg):
+def roc_auc_ci(auc,n_ground_truth_pos,n_ground_truth_neg):
     """ Compute 95% Confidence interval for a given value of AUC. Formulas are based
     on Hanley, J.A. and NcNeil, B.J. 1982. 'The Meaning and Use of the Area under
     a Receiver Operating Characteristic(ROC) Curve.' Radiology, Vol 148, 29-36."""
     aucs = auc**2
     q1 = auc/(2-auc)
     q2 = (2*aucs)/(1+auc)
-    nu = auc*(1-auc) + (n_true_pos-1)*(q1-aucs) + (n_true_neg-1)*(q2-aucs)
-    de = n_true_pos*n_true_neg
+    nu = auc*(1-auc) + (n_ground_truth_pos-1)*(q1-aucs) + (n_ground_truth_neg-1)*(q2-aucs)
+    de = n_ground_truth_pos*n_ground_truth_neg
     se = np.sqrt(nu/de)
     ciz = stat.norm.interval(confidence=0.95,loc=0,scale=1)
-    ci = auc + np.array(ciz)*se
+    ci = auc + np.array(ciz) * se
     return ci
     
 def find_closest_val_index(x,v):
