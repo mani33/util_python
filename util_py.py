@@ -606,7 +606,7 @@ def format_figure(plt,**kwargs):
     params['axes_linewidth'] = 1
     params['xmargin'] = 0.01
     params['fontname'] = 'Arial'
-    params['fontsize'] = 9
+    params['fontsize'] = 14
     params['nondata_col'] = [0.15,0.15,0.15]
     params['labelpad'] = 12
     params['axes_col'] = [0.15,0.15,0.15]
@@ -638,8 +638,7 @@ def format_figure(plt,**kwargs):
     plt.rcParams['ytick.minor.width'] = params['axes_linewidth']
     plt.rcParams['axes.labelpad'] = params['labelpad']
     plt.rcParams['figure.facecolor'] = params['fig_facecol']
-    plt.rcParams['axes.facecolor'] = params['axes_facecol']
-    plt.rcParams['axes.labelpad'] = params['labelpad']
+    plt.rcParams['axes.facecolor'] = params['axes_facecol']    
     
 def make_axes(plt, wh, dpi=300):
     """ Create a new figure, and make a single subplot with axis size w x h in inches """
